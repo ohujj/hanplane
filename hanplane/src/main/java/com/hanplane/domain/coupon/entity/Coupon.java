@@ -41,4 +41,8 @@ public class Coupon {
         this.issuedQuantity = 0;
         this.expiredAt = expiredAt;
     }
+
+    public void issue() {
+        this.issuedQuantity++;
+    }
 }
