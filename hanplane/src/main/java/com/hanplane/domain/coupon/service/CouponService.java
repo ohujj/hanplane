@@ -29,7 +29,7 @@ public class CouponService {
     @Transactional
     public void issueCoupon(Long userId, Long couponId) {
 
-        Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new RuntimeException("쿠폰이 없습니다."));
+        Coupon coupon = couponRepository.findByIdWithLock(couponId).orElseThrow(() -> new RuntimeException("쿠폰이 없습니다."));
         User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
 
         boolean isExists = userCouponRepository.existsByUserIdAndCouponId(userId, couponId);
