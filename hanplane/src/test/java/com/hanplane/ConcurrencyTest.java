@@ -29,11 +29,11 @@ public class ConcurrencyTest {
     private UserRepository userRepository;
 
     @Test
-    void 동시에_30명이_쿠폰_발급_요청() throws InterruptedException {
+    void 동시에_100명이_쿠폰_발급_요청() throws InterruptedException {
         // given
         Coupon coupon = Coupon.builder()
                 .name("100명 제한 쿠폰")
-                .totalQuantity(10)
+                .totalQuantity(100)
                 .expiredAt(LocalDateTime.now().plusDays(7))
                 .discountRate(10)
                 .build();
@@ -41,7 +41,7 @@ public class ConcurrencyTest {
         Coupon savedCoupon = couponRepository.save(coupon);
 
         List<User> userList = new ArrayList<>();
-        for(int i=1; i<=30; i++) {
+        for(int i=1; i<=100; i++) {
             User user = User.builder()
                     .email("user" + i + "@test.com")
                     .password("testUser" + i)
@@ -51,8 +51,10 @@ public class ConcurrencyTest {
         }
 
         // when
+        long start = System.currentTimeMillis();
+
         CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch endLatch = new CountDownLatch(30);
+        CountDownLatch endLatch = new CountDownLatch(100);
 
         for(User user : userList) {
             Long userId = user.getId();
@@ -60,7 +62,8 @@ public class ConcurrencyTest {
             new Thread(() -> {
                 try {
                     startLatch.await();
-                    couponService.issueCoupon(userId, savedCoupon.getId()); // <- 여기 내부에서 코드 변경
+                    couponService.issueCoupon(userId, savedCoupon.getId());
+//                    couponService.issueCouponWithPessimisticLock(userId, savedCoupon.getId());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } finally {
@@ -74,13 +77,16 @@ public class ConcurrencyTest {
         // 100개 스레드 전부 끝날 때까지 대기
         endLatch.await();
 
+        long end = System.currentTimeMillis();
+        System.out.println("Redis 분산락 사용 소요 시간: " + (end - start) + "ms");
+
         // then
         Coupon findCoupon = couponRepository.findById(savedCoupon.getId()).orElseThrow();
         int issuedQuantity = findCoupon.getIssuedQuantity();
 
         System.out.println("발급 된 수량 : " + issuedQuantity);
 
-        Assertions.assertThat(issuedQuantity).isEqualTo(10);
+        Assertions.assertThat(issuedQuantity).isEqualTo(100);
 
     }
 }
