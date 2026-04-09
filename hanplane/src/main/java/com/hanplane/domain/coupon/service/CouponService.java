@@ -1,62 +1,50 @@
 package com.hanplane.domain.coupon.service;
 
-import com.hanplane.domain.coupon.entity.Coupon;
-import com.hanplane.domain.coupon.entity.CouponStatus;
-import com.hanplane.domain.coupon.entity.UserCoupon;
-import com.hanplane.domain.coupon.repository.CouponRepository;
-import com.hanplane.domain.coupon.repository.UserCouponRepository;
-import com.hanplane.domain.user.entity.User;
-import com.hanplane.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class CouponService {
 
-    private final CouponRepository couponRepository;
-    private final UserRepository userRepository;
-    private final UserCouponRepository userCouponRepository;
+    private final CouponIssueService couponIssueService;
 
+    private final RedissonClient redissonClient;
+
+    private final String couponLockKey = "coupon:lock:";
 
     @Transactional
     public void issueCoupon(Long userId, Long couponId) {
 
-        Coupon coupon = couponRepository.findByIdWithLock(couponId).orElseThrow(() -> new RuntimeException("쿠폰이 없습니다."));
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
+        RLock lock = redissonClient.getLock(couponLockKey + couponId);
 
-        boolean isExists = userCouponRepository.existsByUserIdAndCouponId(userId, couponId);
-        log.info("isExists = {}", isExists);
+        try {
+            boolean hasLock = lock.tryLock(30, 3, TimeUnit.SECONDS);
+            if (!hasLock) {
+                throw new RuntimeException("락 획득 실패!");
+            }
 
-        if(isExists) {
-            throw new RuntimeException("이미 발급 된 쿠폰입니다.");
+            couponIssueService.issue(userId, couponId);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            if(lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
 
-        int totalQuantity = coupon.getTotalQuantity();
-        int issuedQuantity = coupon.getIssuedQuantity();
+    }
 
-        if(totalQuantity <= issuedQuantity) {
-            throw new RuntimeException("정원 초과 되었습니다.");
-        }
-
-        coupon.issue();
-
-        UserCoupon userCoupon = UserCoupon.builder()
-                .user(user)
-                .coupon(coupon)
-                .status(CouponStatus.UNUSED)
-                .issuedAt(LocalDateTime.now())
-                .build();
-
-        UserCoupon save = userCouponRepository.save(userCoupon);
-
+    public void issueCouponWithPessimisticLock(Long userId, Long couponId) {
+        couponIssueService.issueWithPessimisticLock(userId, couponId);
     }
 
 }
