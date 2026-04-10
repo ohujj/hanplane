@@ -20,7 +20,6 @@ public class CouponService {
 
     private final String couponLockKey = "coupon:lock:";
 
-    @Transactional
     public void issueCoupon(Long userId, Long couponId) {
 
         RLock lock = redissonClient.getLock(couponLockKey + couponId);
