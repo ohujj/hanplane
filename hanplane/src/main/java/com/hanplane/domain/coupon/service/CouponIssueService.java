@@ -7,6 +7,8 @@ import com.hanplane.domain.coupon.repository.CouponRepository;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.domain.user.repository.UserRepository;
+import com.hanplane.global.exception.BusinessException;
+import com.hanplane.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,21 +28,21 @@ public class CouponIssueService {
 
     @Transactional
     public void issue(Long userId, Long couponId) {
-        Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new RuntimeException("쿠폰이 없습니다."));
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
+        Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         boolean isExists = userCouponRepository.existsByUserIdAndCouponId(userId, couponId);
         log.info("isExists = {}", isExists);
 
         if (isExists) {
-            throw new RuntimeException("이미 발급 된 쿠폰입니다.");
+            throw new BusinessException(ErrorCode.COUPON_ALREADY_ISSUED);
         }
 
         int totalQuantity = coupon.getTotalQuantity();
         int issuedQuantity = coupon.getIssuedQuantity();
 
         if (totalQuantity <= issuedQuantity) {
-            throw new RuntimeException("정원 초과 되었습니다.");
+            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
         }
 
         coupon.issue();
@@ -58,21 +60,21 @@ public class CouponIssueService {
     @Transactional
     public void issueWithPessimisticLock(Long userId, Long couponId) {
         Coupon coupon = couponRepository.findByIdWithLock(couponId)
-                .orElseThrow(() -> new RuntimeException("쿠폰이 없습니다."));
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("사용자가 없습니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         boolean isExists = userCouponRepository.existsByUserIdAndCouponId(userId, couponId);
         log.info("isExists = {}", isExists);
 
         if (isExists) {
-            throw new RuntimeException("이미 발급 된 쿠폰입니다.");
+            throw new BusinessException(ErrorCode.COUPON_ALREADY_ISSUED);
         }
 
         int totalQuantity = coupon.getTotalQuantity();
         int issuedQuantity = coupon.getIssuedQuantity();
 
         if (totalQuantity <= issuedQuantity) {
-            throw new RuntimeException("정원 초과 되었습니다.");
+            throw new BusinessException(ErrorCode.COUPON_SOLD_OUT);
         }
 
         coupon.issue();

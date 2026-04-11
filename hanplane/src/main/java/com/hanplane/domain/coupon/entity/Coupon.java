@@ -45,4 +45,20 @@ public class Coupon {
     public void issue() {
         this.issuedQuantity++;
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateDiscountRate(int discountRate) {
+        this.discountRate = discountRate;
+    }
+
+    public void updateTotalQuantity(int totalQuantity) {
+        this.totalQuantity = totalQuantity;
+    }
+
+    public void updateExpiredAt(LocalDateTime expiredAt) {
+        this.expiredAt = expiredAt;
+    }
 }
