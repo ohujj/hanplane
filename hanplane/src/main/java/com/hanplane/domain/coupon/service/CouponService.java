@@ -1,5 +1,8 @@
 package com.hanplane.domain.coupon.service;
 
+import com.hanplane.domain.coupon.dto.CouponListResponse;
+import com.hanplane.global.exception.BusinessException;
+import com.hanplane.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -7,6 +10,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -20,6 +24,7 @@ public class CouponService {
 
     private final String couponLockKey = "coupon:lock:";
 
+
     public void issueCoupon(Long userId, Long couponId) {
 
         RLock lock = redissonClient.getLock(couponLockKey + couponId);
@@ -27,7 +32,7 @@ public class CouponService {
         try {
             boolean hasLock = lock.tryLock(30, 3, TimeUnit.SECONDS);
             if (!hasLock) {
-                throw new RuntimeException("락 획득 실패!");
+                throw new BusinessException(ErrorCode.LOCK_TRY_FAIL);
             }
 
             couponIssueService.issue(userId, couponId);
