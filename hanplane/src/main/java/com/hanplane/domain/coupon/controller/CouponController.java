@@ -23,7 +23,9 @@ public class CouponController {
     private final CouponInfoService couponInfoService;
 
     @PostMapping("/{couponId}/issue")
-    public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId, @RequestBody CouponIssueRequest request) {
+    public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId,  @AuthenticationPrincipal Long userId) {
+
+
         couponService.issueCoupon(request.getUserId(), couponId);
 
         return ResponseEntity.ok(ApiResponse.success());
