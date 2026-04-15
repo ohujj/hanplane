@@ -8,7 +8,9 @@ import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.domain.coupon.service.CouponService;
 import com.hanplane.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/coupons")
+@Slf4j
 public class CouponController {
 
     private final CouponService couponService;
@@ -25,8 +28,9 @@ public class CouponController {
     @PostMapping("/{couponId}/issue")
     public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId,  @AuthenticationPrincipal Long userId) {
 
+        log.info(userId + " 디버깅 ");
 
-        couponService.issueCoupon(request.getUserId(), couponId);
+        couponService.issueCoupon(userId, couponId);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
