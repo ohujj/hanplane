@@ -28,7 +28,7 @@ public class CouponController {
     @PostMapping("/{couponId}/issue")
     public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId,  @AuthenticationPrincipal Long userId) {
 
-        log.info(userId + " 디버깅 ");
+        log.info(userId + " 디버깅  ");
 
         couponService.issueCoupon(userId, couponId);
 
