@@ -2,6 +2,7 @@ package com.hanplane.domain.user.service;
 
 import com.hanplane.domain.user.dto.LoginRequest;
 import com.hanplane.domain.user.dto.LoginResponse;
+import com.hanplane.domain.user.entity.Role;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.domain.user.repository.UserRepository;
 import com.hanplane.global.exception.BusinessException;
@@ -33,10 +34,14 @@ public class AuthService {
 
 
         Long userId = user.getId();
+        Role role = user.getRole();
+
+        log.info(role + "롤 디버깅");
 
         return LoginResponse.builder()
                 .userId(userId)
-                .accessToken(jwtProvider.generateToken(userId))
+                .role(role)
+                .accessToken(jwtProvider.generateToken(userId, role))
                 .build();
     }
 

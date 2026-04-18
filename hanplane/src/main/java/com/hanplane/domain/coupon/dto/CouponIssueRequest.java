@@ -9,5 +9,4 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class CouponIssueRequest {
 
-    private final Long userId;
 }

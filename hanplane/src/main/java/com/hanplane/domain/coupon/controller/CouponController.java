@@ -6,6 +6,7 @@ import com.hanplane.domain.coupon.service.CouponInfoService;
 import com.hanplane.domain.coupon.dto.CouponIssueRequest;
 import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.domain.coupon.service.CouponService;
+import com.hanplane.global.jwt.UserPrincipal;
 import com.hanplane.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +27,11 @@ public class CouponController {
     private final CouponInfoService couponInfoService;
 
     @PostMapping("/{couponId}/issue")
-    public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId,  @AuthenticationPrincipal Long userId) {
+    public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
-        log.info(userId + " 디버깅  ");
+        log.info("jwt 디버깅 : " + userPrincipal.toString());
 
-        couponService.issueCoupon(userId, couponId);
+        couponService.issueCoupon(userPrincipal.userId(), couponId);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
@@ -50,7 +51,7 @@ public class CouponController {
     }
 
     @PatchMapping("/{couponId}")
-    public ResponseEntity<ApiResponse<Void>> updateCoupon(@PathVariable("couponId") Long couponId, @RequestBody CouponUpdateRequest couponUpdateRequest) {
+    public ResponseEntity<ApiResponse<Void>> updateCoupon(@PathVariable("couponId") Long couponId, @RequestBody CouponUpdateRequest couponUpdateRequest, @AuthenticationPrincipal UserPrincipal userPrincipal) {
         couponInfoService.updateCoupon(couponId, couponUpdateRequest);
 
         return ResponseEntity.ok(ApiResponse.success());

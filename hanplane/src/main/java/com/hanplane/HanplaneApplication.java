@@ -8,9 +8,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 public class HanplaneApplication {
 
 	public static void main(String[] args) {
-		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-		System.out.println(encoder.encode("1234") + " : is Encoded");
-
 		SpringApplication.run(HanplaneApplication.class, args);
 	}
 
