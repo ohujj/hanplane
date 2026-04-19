@@ -2,14 +2,17 @@ package com.hanplane.domain.coupon.controller;
 
 
 import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
+import com.hanplane.domain.coupon.dto.UserCouponResponse;
+import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.service.CouponInfoService;
-import com.hanplane.domain.coupon.dto.CouponIssueRequest;
 import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.domain.coupon.service.CouponService;
 import com.hanplane.global.jwt.UserPrincipal;
 import com.hanplane.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -28,19 +31,23 @@ public class CouponController {
 
     @PostMapping("/{couponId}/issue")
     public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
-
-        log.info("jwt 디버깅 : " + userPrincipal.toString());
-
         couponService.issueCoupon(userPrincipal.userId(), couponId);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<CouponListResponse>>> getCouponList() {
-        List<CouponListResponse> couponList = couponInfoService.getCouponList();
+    public ResponseEntity<ApiResponse<Page<CouponListResponse>>> getCouponList(Pageable pageable) {
+        Page<CouponListResponse> couponList = couponInfoService.getCouponList(pageable);
 
         return ResponseEntity.ok(ApiResponse.success(couponList));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<ApiResponse<List<UserCouponResponse>>> getUserCouponByUserId(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+        List<UserCouponResponse> userCouponByUserId = couponInfoService.getUserCouponByUserId(userPrincipal.userId());
+
+        return ResponseEntity.ok(ApiResponse.success(userCouponByUserId));
     }
 
     @GetMapping("/{couponId}")
@@ -57,5 +64,10 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
+    @DeleteMapping("/{couponId}")
+    public ResponseEntity<ApiResponse<Void>> deleteCoupon(@PathVariable("couponId") Long couponId) {
+        couponInfoService.deleteCoupon(couponId);
 
+        return ResponseEntity.ok(ApiResponse.success());
+    }
 }

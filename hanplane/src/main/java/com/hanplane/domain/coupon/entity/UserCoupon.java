@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "user_coupon")
 public class UserCoupon {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

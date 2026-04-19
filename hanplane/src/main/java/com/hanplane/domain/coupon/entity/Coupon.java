@@ -33,6 +33,8 @@ public class Coupon {
     @Column(nullable = false)
     private LocalDateTime expiredAt;
 
+    private LocalDateTime deletedAt;
+
     @Builder
     private Coupon(String name, int discountRate, int totalQuantity, LocalDateTime expiredAt) {
         this.name = name;
@@ -61,4 +63,6 @@ public class Coupon {
     public void updateExpiredAt(LocalDateTime expiredAt) {
         this.expiredAt = expiredAt;
     }
+
+    public void delete() {this.deletedAt = LocalDateTime.now();}
 }

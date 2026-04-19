@@ -24,6 +24,9 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
     private String password;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY) // 1 대 다 관계, user컬럼과 매핑, lazy로 해서 n+1 문제 제어
@@ -34,9 +37,10 @@ public class User {
     private Role role;
 
     @Builder // 생성자, 클래스 레벨에 붙이면 @Id인 PK까지 건들게 되어 문제가 생겨서 여기에 건다.
-    private User(String email, String password, Role role) {
+    private User(String email, String password, Role role, String name) {
         this.email = email;
         this.password = password;
         this.role = role;
+        this.name = name;
     }
 }

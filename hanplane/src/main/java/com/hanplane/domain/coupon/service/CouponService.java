@@ -3,6 +3,7 @@ package com.hanplane.domain.coupon.service;
 import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.global.exception.BusinessException;
 import com.hanplane.global.exception.ErrorCode;
+import com.hanplane.global.jwt.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -50,5 +51,4 @@ public class CouponService {
     public void issueCouponWithPessimisticLock(Long userId, Long couponId) {
         couponIssueService.issueWithPessimisticLock(userId, couponId);
     }
-
 }
