@@ -2,15 +2,22 @@ package com.hanplane.domain.coupon.service;
 
 import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
+import com.hanplane.domain.coupon.dto.UserCouponResponse;
 import com.hanplane.domain.coupon.entity.Coupon;
+import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.repository.CouponRepository;
+import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.global.exception.BusinessException;
 import com.hanplane.global.exception.ErrorCode;
+import com.hanplane.global.jwt.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,11 +29,11 @@ import java.util.stream.Collectors;
 public class CouponInfoService {
 
     private final CouponRepository couponRepository;
+    private final UserCouponRepository userCouponRepository;
 
-    public List<CouponListResponse> getCouponList() {
-        return couponRepository.findAll().stream()
-                .map(CouponListResponse :: from)
-                .collect(Collectors.toList());
+    public Page<CouponListResponse> getCouponList(Pageable pageable) {
+        return couponRepository.findByDeletedAtIsNull(pageable)
+                .map(CouponListResponse :: from);
     }
 
     public CouponListResponse getCouponDetail(Long couponId) {
@@ -53,4 +60,18 @@ public class CouponInfoService {
         }
     }
 
+    @Transactional
+    public void deleteCoupon(Long couponId) {
+        Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
+
+        coupon.delete();
+    }
+
+    public List<UserCouponResponse> getUserCouponByUserId(Long userId) {
+        //return userCouponRepository.findByUserId(userId).stream()
+        return userCouponRepository.findByUserIdWithCouponAndUser(userId).stream()
+                .map(UserCouponResponse :: from)
+                .collect(Collectors.toList());
+
+    }
 }

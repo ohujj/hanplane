@@ -9,6 +9,7 @@ spring:
     username: root
     password: 1234
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: create-drop
     show-sql: true

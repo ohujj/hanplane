@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/coupons", "/coupons/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/coupons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/coupons/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
