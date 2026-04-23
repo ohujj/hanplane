@@ -43,13 +43,6 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success(couponList));
     }
 
-    @GetMapping("/my")
-    public ResponseEntity<ApiResponse<List<UserCouponResponse>>> getUserCouponByUserId(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-        List<UserCouponResponse> userCouponByUserId = couponInfoService.getUserCouponByUserId(userPrincipal.userId());
-
-        return ResponseEntity.ok(ApiResponse.success(userCouponByUserId));
-    }
-
     @GetMapping("/{couponId}")
     public ResponseEntity<ApiResponse<CouponListResponse>> getCouponDetail(@PathVariable("couponId") Long couponId) {
         CouponListResponse couponDetail = couponInfoService.getCouponDetail(couponId);
