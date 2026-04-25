@@ -1,4 +1,6 @@
 spring:
+  elasticsearch:
+    uris: http://localhost:9200
   data:
     redis:
       host: localhost
@@ -11,7 +13,8 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+#      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -20,7 +23,10 @@ spring:
     defer-datasource-initialization: true
   sql:
     init:
-      mode: always
+      mode: never
 jwt:
   secret: hanplane-secret-key-for-jwt-authentication-2024
   expiration: 86400000
+logging:
+  level:
+    tracer: TRACE

@@ -1,5 +1,6 @@
 package com.hanplane.domain.coupon.dto;
 
+import com.hanplane.domain.coupon.CouponDocument;
 import com.hanplane.domain.coupon.entity.Coupon;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,6 +33,17 @@ public class CouponListResponse {
                 .expiredAt(coupon.getExpiredAt())
                 .issuedQuantity(coupon.getIssuedQuantity())
                 .totalQuantity(coupon.getTotalQuantity())
+                .build();
+    }
+
+    public static CouponListResponse from(CouponDocument couponDocument) {
+        return CouponListResponse.builder()
+                .couponId(couponDocument.getId())
+                .couponName(couponDocument.getName())
+                .discountRate(couponDocument.getDiscountRate())
+                .expiredAt(couponDocument.getExpiredAt())
+                .issuedQuantity(couponDocument.getIssuedQuantity())
+                .totalQuantity(couponDocument.getTotalQuantity())
                 .build();
     }
 }

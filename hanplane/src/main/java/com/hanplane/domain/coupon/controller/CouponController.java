@@ -36,6 +36,14 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<CouponListResponse>>> searchCoupon(@RequestParam("keyword") String keyword, Pageable pageable) {
+        // Page<CouponListResponse> couponListResponsePage = couponInfoService.searchCoupon(keyword, pageable);
+        Page<CouponListResponse> couponListResponsePage = couponInfoService.elasticsearchCoupon(keyword, pageable);
+
+        return ResponseEntity.ok(ApiResponse.success(couponListResponsePage));
+    }
+
     @GetMapping()
     public ResponseEntity<ApiResponse<Page<CouponListResponse>>> getCouponList(Pageable pageable) {
         Page<CouponListResponse> couponList = couponInfoService.getCouponList(pageable);
@@ -56,6 +64,7 @@ public class CouponController {
 
         return ResponseEntity.ok(ApiResponse.success());
     }
+
 
     @DeleteMapping("/{couponId}")
     public ResponseEntity<ApiResponse<Void>> deleteCoupon(@PathVariable("couponId") Long couponId) {
