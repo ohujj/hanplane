@@ -5,6 +5,7 @@ import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
 import com.hanplane.domain.coupon.dto.UserCouponResponse;
 import com.hanplane.domain.coupon.entity.Coupon;
 import com.hanplane.domain.coupon.entity.UserCoupon;
+import com.hanplane.domain.coupon.repository.CouponElasticsearchRepository;
 import com.hanplane.domain.coupon.repository.CouponRepository;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.global.exception.BusinessException;
@@ -30,6 +31,7 @@ public class CouponInfoService {
 
     private final CouponRepository couponRepository;
     private final UserCouponRepository userCouponRepository;
+    private final CouponElasticsearchRepository couponElasticsearchRepository;
 
     public Page<CouponListResponse> getCouponList(Pageable pageable) {
         return couponRepository.findByDeletedAtIsNull(pageable)
@@ -73,5 +75,16 @@ public class CouponInfoService {
                 .map(UserCouponResponse :: from)
                 .collect(Collectors.toList());
 
+    }
+
+    public Page<CouponListResponse> searchCoupon(String keyword, Pageable pageable) {
+
+        return couponRepository.findByNameContainingAndDeletedAtIsNull(keyword, pageable)
+                .map(CouponListResponse :: from);
+    }
+
+    public Page<CouponListResponse> elasticsearchCoupon(String keyword, Pageable pageable) {
+        return couponElasticsearchRepository.findByNameContaining(keyword, pageable)
+                .map(CouponListResponse :: from);
     }
 }

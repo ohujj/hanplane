@@ -23,7 +23,7 @@ public class UserCouponController {
 
     private final CouponInfoService couponInfoService;
 
-    @GetMapping("")
+    @GetMapping()
     public ResponseEntity<ApiResponse<List<UserCouponResponse>>> getUserCouponByUserId(@AuthenticationPrincipal UserPrincipal userPrincipal) {
         List<UserCouponResponse> userCouponByUserId = couponInfoService.getUserCouponByUserId(userPrincipal.userId());
 

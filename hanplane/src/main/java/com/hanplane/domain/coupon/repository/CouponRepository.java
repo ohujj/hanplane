@@ -18,6 +18,10 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     @Query("SELECT c FROM Coupon c WHERE c.id = :id")
     Optional<Coupon> findByIdWithLock(@Param("id") Long id);
 
-        Page<Coupon> findByDeletedAtIsNull(Pageable pageable);
+    Page<Coupon> findByDeletedAtIsNull(Pageable pageable);
+
+    List<Coupon> findByDeletedAtIsNull();
+
+    Page<Coupon> findByNameContainingAndDeletedAtIsNull(String keyword, Pageable pageable);
 
 }
