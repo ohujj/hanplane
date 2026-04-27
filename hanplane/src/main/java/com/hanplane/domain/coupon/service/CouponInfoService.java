@@ -1,5 +1,7 @@
 package com.hanplane.domain.coupon.service;
 
+import com.hanplane.domain.coupon.CouponCreateEvent;
+import com.hanplane.domain.coupon.dto.CouponCreateRequest;
 import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
 import com.hanplane.domain.coupon.dto.UserCouponResponse;
@@ -13,6 +15,7 @@ import com.hanplane.global.exception.ErrorCode;
 import com.hanplane.global.jwt.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +35,7 @@ public class CouponInfoService {
     private final CouponRepository couponRepository;
     private final UserCouponRepository userCouponRepository;
     private final CouponElasticsearchRepository couponElasticsearchRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public Page<CouponListResponse> getCouponList(Pageable pageable) {
         return couponRepository.findByDeletedAtIsNull(pageable)
@@ -86,5 +90,19 @@ public class CouponInfoService {
     public Page<CouponListResponse> elasticsearchCoupon(String keyword, Pageable pageable) {
         return couponElasticsearchRepository.findByNameContaining(keyword, pageable)
                 .map(CouponListResponse :: from);
+    }
+
+    @Transactional
+    public void createCoupon(CouponCreateRequest couponCreateRequest) {
+        Coupon coupon = Coupon.builder()
+                        .name(couponCreateRequest.getName())
+                        .totalQuantity(couponCreateRequest.getTotalQuantity())
+                        .discountRate(couponCreateRequest.getDiscountRate())
+                        .expiredAt(couponCreateRequest.getExpiredAt())
+                        .build();
+
+        Coupon savedCoupon = couponRepository.save(coupon);
+
+        eventPublisher.publishEvent(new CouponCreateEvent(savedCoupon));
     }
 }
