@@ -1,6 +1,7 @@
 package com.hanplane.domain.coupon.controller;
 
 
+import com.hanplane.domain.coupon.dto.CouponCreateRequest;
 import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
 import com.hanplane.domain.coupon.dto.UserCouponResponse;
 import com.hanplane.domain.coupon.entity.UserCoupon;
@@ -69,6 +70,13 @@ public class CouponController {
     @DeleteMapping("/{couponId}")
     public ResponseEntity<ApiResponse<Void>> deleteCoupon(@PathVariable("couponId") Long couponId) {
         couponInfoService.deleteCoupon(couponId);
+
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @PostMapping()
+    public ResponseEntity<ApiResponse<Void>> createCoupon(@RequestBody CouponCreateRequest couponCreateRequest) {
+        couponInfoService.createCoupon(couponCreateRequest);
 
         return ResponseEntity.ok(ApiResponse.success());
     }

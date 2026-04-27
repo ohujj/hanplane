@@ -26,4 +26,8 @@ public class CouponSyncService {
                         .collect(Collectors.toList());
         couponElasticsearchRepository.saveAll(documents);
     }
+
+    public void syncOne(Coupon coupon) {
+        couponElasticsearchRepository.save(CouponDocument.from(coupon));
+    }
 }

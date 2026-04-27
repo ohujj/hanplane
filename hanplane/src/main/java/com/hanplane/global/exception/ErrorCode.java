@@ -10,6 +10,7 @@ public enum ErrorCode {
     COUPON_ALREADY_ISSUED(400, "이미 발급된 쿠폰입니다."),
     LOCK_TRY_FAIL(400, "락 획득에 실패하였습니다."),
     PASSWORD_NOT_EQUAL(400, "비밀번호가 틀렸습니다."),
+    COUPON_CREATE_FAIL(400, "쿠폰 생성에 실패하였습니다."),
 
     ;
 
