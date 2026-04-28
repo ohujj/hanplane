@@ -28,6 +28,9 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+        log.info("url검증 : " + request.getRequestURL());
+
         String authHeader = request.getHeader("Authorization");
         if(authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
@@ -54,6 +57,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(principal, null, authorities);
+
+        log.info(authentication.toString() + " authentication디버깅 toString");
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
 

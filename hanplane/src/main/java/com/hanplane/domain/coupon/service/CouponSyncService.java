@@ -30,4 +30,8 @@ public class CouponSyncService {
     public void syncOne(Coupon coupon) {
         couponElasticsearchRepository.save(CouponDocument.from(coupon));
     }
+
+    public void deleteOne(Long couponId) {
+        couponElasticsearchRepository.deleteById(couponId);
+    }
 }

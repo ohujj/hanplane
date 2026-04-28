@@ -1,6 +1,8 @@
 package com.hanplane.domain.coupon.service;
 
 import com.hanplane.domain.coupon.CouponCreateEvent;
+import com.hanplane.domain.coupon.CouponDeleteEvent;
+import com.hanplane.domain.coupon.CouponUpdateEvent;
 import com.hanplane.domain.coupon.dto.CouponCreateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,16 @@ public class CouponEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCouponCreated(CouponCreateEvent event) {
         couponSyncService.syncOne(event.coupon());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleCouponUpdated(CouponUpdateEvent event) {
+        couponSyncService.syncOne(event.coupon());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleCouponDeleted(CouponDeleteEvent event) {
+        couponSyncService.deleteOne(event.couponId());
     }
 
 

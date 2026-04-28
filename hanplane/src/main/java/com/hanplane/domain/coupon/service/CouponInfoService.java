@@ -1,6 +1,8 @@
 package com.hanplane.domain.coupon.service;
 
 import com.hanplane.domain.coupon.CouponCreateEvent;
+import com.hanplane.domain.coupon.CouponDeleteEvent;
+import com.hanplane.domain.coupon.CouponUpdateEvent;
 import com.hanplane.domain.coupon.dto.CouponCreateRequest;
 import com.hanplane.domain.coupon.dto.CouponListResponse;
 import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
@@ -64,6 +66,8 @@ public class CouponInfoService {
         if(request.getTotalQuantity() != null) {
             coupon.updateTotalQuantity(request.getTotalQuantity());
         }
+
+        eventPublisher.publishEvent(new CouponUpdateEvent(coupon));
     }
 
     @Transactional
@@ -71,6 +75,8 @@ public class CouponInfoService {
         Coupon coupon = couponRepository.findById(couponId).orElseThrow(() -> new BusinessException(ErrorCode.COUPON_NOT_FOUND));
 
         coupon.delete();
+
+        eventPublisher.publishEvent(new CouponDeleteEvent(coupon.getId()));
     }
 
     public List<UserCouponResponse> getUserCouponByUserId(Long userId) {
