@@ -21,10 +21,18 @@ public class CouponSyncService {
 
     public void syncAll() {
         List<Coupon> coupons = couponRepository.findByDeletedAtIsNull();
-        List<CouponDocument> documents = coupons.stream()
-                        .map(CouponDocument :: from)
-                        .collect(Collectors.toList());
-        couponElasticsearchRepository.saveAll(documents);
+
+        int batchSize = 1000;
+        for(int i=0; i<coupons.size(); i+= batchSize) {
+            int end = Math.min(i + batchSize, coupons.size());
+
+            List<CouponDocument> documents = coupons.subList(i, end).stream()
+                    .map(CouponDocument :: from)
+                    .collect(Collectors.toList());
+            couponElasticsearchRepository.saveAll(documents);
+            log.info("ES 동기화 진행중: {}/{}", end, coupons.size());
+        }
+
     }
 
     public void syncOne(Coupon coupon) {

@@ -3,7 +3,6 @@ package com.hanplane.domain.coupon.service;
 import com.hanplane.domain.coupon.CouponCreateEvent;
 import com.hanplane.domain.coupon.CouponDeleteEvent;
 import com.hanplane.domain.coupon.CouponUpdateEvent;
-import com.hanplane.domain.coupon.dto.CouponCreateRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
