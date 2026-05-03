@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_PEM_KEY }}
           script: |
-            pkill -f hanplane || true
+            kill $(lsof -t -i:8080) || true
             cd /home/ec2-user
             rm -f hanplane.jar
 
