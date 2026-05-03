@@ -1,3 +1,7 @@
+bootJar {
+	archiveFileName = 'hanplane.jar'
+}
+
 plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.13'
