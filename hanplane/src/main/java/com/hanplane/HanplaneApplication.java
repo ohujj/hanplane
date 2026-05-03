@@ -10,10 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @SpringBootApplication
-@RequiredArgsConstructor
 public class HanplaneApplication {
-
-	private final CouponSyncService couponSyncService;
 
 	public static void main(String[] args) {
 		SpringApplication.run(HanplaneApplication.class, args);
@@ -23,7 +20,7 @@ public class HanplaneApplication {
 
 	@Bean
 	@Profile("local")
-	public ApplicationRunner applicationRunner() {
+	public ApplicationRunner applicationRunner(CouponSyncService couponSyncService) {
 		return args -> {
 			couponSyncService.syncAll();
 		};
