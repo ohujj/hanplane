@@ -17,6 +17,7 @@ import com.hanplane.global.exception.ErrorCode;
 import com.hanplane.global.jwt.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -36,8 +37,11 @@ public class CouponInfoService {
 
     private final CouponRepository couponRepository;
     private final UserCouponRepository userCouponRepository;
-    private final CouponElasticsearchRepository couponElasticsearchRepository;
     private final ApplicationEventPublisher eventPublisher;
+
+    @Autowired(required = false)
+    private CouponElasticsearchRepository couponElasticsearchRepository;
+
 
     public Page<CouponListResponse> getCouponList(Pageable pageable) {
         return couponRepository.findByDeletedAtIsNull(pageable)
