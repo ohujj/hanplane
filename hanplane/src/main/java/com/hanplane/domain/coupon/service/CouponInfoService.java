@@ -98,9 +98,14 @@ public class CouponInfoService {
     }
 
     public Page<CouponListResponse> elasticsearchCoupon(String keyword, Pageable pageable) {
+        if(couponElasticsearchRepository == null) {
+            return searchCoupon(keyword, pageable);
+        }
+
         return couponElasticsearchRepository.findByNameContaining(keyword, pageable)
                 .map(CouponListResponse :: from);
     }
+
 
     @Transactional
     public void createCoupon(CouponCreateRequest couponCreateRequest) {

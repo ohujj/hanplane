@@ -39,7 +39,6 @@ public class CouponController {
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<Page<CouponListResponse>>> searchCoupon(@RequestParam("keyword") String keyword, Pageable pageable) {
-        // Page<CouponListResponse> couponListResponsePage = couponInfoService.searchCoupon(keyword, pageable);
         Page<CouponListResponse> couponListResponsePage = couponInfoService.elasticsearchCoupon(keyword, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(couponListResponsePage));
