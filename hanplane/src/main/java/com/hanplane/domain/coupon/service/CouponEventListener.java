@@ -5,6 +5,7 @@ import com.hanplane.domain.coupon.CouponDeleteEvent;
 import com.hanplane.domain.coupon.CouponUpdateEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -12,6 +13,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@Profile("local")
 public class CouponEventListener {
 
     private final CouponSyncService couponSyncService;
