@@ -1,4 +1,4 @@
-package com.hanplane.domain.user.dto;
+package com.hanplane.domain.auth.dto;
 
 import lombok.Builder;
 import lombok.Getter;

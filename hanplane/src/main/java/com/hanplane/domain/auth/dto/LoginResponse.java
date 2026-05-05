@@ -1,4 +1,4 @@
-package com.hanplane.domain.user.dto;
+package com.hanplane.domain.auth.dto;
 
 import com.hanplane.domain.user.entity.Role;
 import lombok.Builder;
@@ -15,5 +15,7 @@ public class LoginResponse {
     private final String accessToken;
 
     private final Role role;
+
+    private final String refreshToken;
 
 }

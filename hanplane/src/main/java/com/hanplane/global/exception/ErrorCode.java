@@ -12,6 +12,12 @@ public enum ErrorCode {
     PASSWORD_NOT_EQUAL(400, "비밀번호가 틀렸습니다."),
     COUPON_CREATE_FAIL(400, "쿠폰 생성에 실패하였습니다."),
 
+    REFRESH_TOKEN_NOT_FOUND(404, "리프레시 토큰이 존재하지 않습니다."),
+    EXPIRED_TOKEN(400, "토큰이 만료되었습니다."),
+    EXPIRED_REFRESH_TOKEN(400, "리프레시 토큰이 만료되었습니다."),
+    JWT_TOKEN_VALIDATE_FAIL(400, "토큰 검증에 실패하였습니다."),
+
+
     ;
 
     private final int status;

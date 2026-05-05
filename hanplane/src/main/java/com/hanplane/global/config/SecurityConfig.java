@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/reissue").permitAll()
                         .requestMatchers(HttpMethod.GET, "/coupons", "/coupons/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/coupons/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/coupons/**").hasRole("ADMIN")
