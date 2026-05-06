@@ -1,5 +1,7 @@
 package com.hanplane.global.jwt;
 
+import com.hanplane.global.exception.BusinessException;
+import com.hanplane.global.exception.ErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,8 +41,16 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         log.info("jwt filter에서 subString 7 이후 token 디버깅 : " + token);
-
-        boolean isValidated = jwtProvider.validateToken(token);
+        boolean isValidated = false;
+        try {
+            isValidated = jwtProvider.validateToken(token);
+        } catch (BusinessException e) {
+            ErrorCode error = e.getErrorCode();
+            response.setStatus(error.getStatus());
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":" + error.getCode() + ",\"message\":\"" + error.getMessage() + "\",\"data\":null}");
+            return;
+        }
         log.info(isValidated +  " 검증 여부 isValidated");
         if(!isValidated) {
             filterChain.doFilter(request, response);
