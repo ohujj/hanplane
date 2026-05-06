@@ -39,3 +39,6 @@ out/
 ### Secrets ###
 application-prod.yml
 application-local.yml
+
+### Q class ###
+src/main/generated
