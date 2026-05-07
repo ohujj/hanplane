@@ -17,13 +17,4 @@ public class HanplaneApplication {
 		
 	}
 
-
-	@Bean
-	@Profile("local")
-	public ApplicationRunner applicationRunner(CouponSyncService couponSyncService) {
-		return args -> {
-			couponSyncService.syncAll();
-		};
-	}
-
 }

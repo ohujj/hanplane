@@ -1,17 +1,20 @@
 package com.hanplane.domain.coupon.dto;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import lombok.extern.jackson.Jacksonized;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-@Jacksonized
 public class CouponSearchCondition {
 
-    private final String name;
-    private final Integer discountRate;
-    private final LocalDate expiryDate;
+    private String name;
+    private Integer discountRate;
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime expiryDate;
 }

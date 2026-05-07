@@ -4,6 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
+    //1000 - global
+    ACTIVE_PROFILE_LOCAL(400, 1001, "운영 환경에서는 호출이 불가능합니다."),
+    INVALID_REQUEST_PARAMETER(400, 1002, "잘못된 요청 파라미터입니다."),
+
     //4000 - auth
     PASSWORD_NOT_EQUAL(400, 4001,"비밀번호가 틀렸습니다."),
     REFRESH_TOKEN_NOT_FOUND(404, 4002,"리프레시 토큰이 존재하지 않습니다."),
@@ -16,6 +20,7 @@ public enum ErrorCode {
     COUPON_SOLD_OUT(400, 5002, "쿠폰이 소진되었습니다."),
     COUPON_ALREADY_ISSUED(400, 5003, "이미 발급된 쿠폰입니다."),
     COUPON_CREATE_FAIL(400,5004, "쿠폰 생성에 실패하였습니다."),
+
 
     //6000 - user
     USER_NOT_FOUND(404, 6001, "유저가 존재하지 않습니다"),

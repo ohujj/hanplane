@@ -3,14 +3,12 @@ package com.hanplane.domain.coupon.service;
 import com.hanplane.domain.coupon.CouponCreateEvent;
 import com.hanplane.domain.coupon.CouponDeleteEvent;
 import com.hanplane.domain.coupon.CouponUpdateEvent;
-import com.hanplane.domain.coupon.dto.CouponCreateRequest;
-import com.hanplane.domain.coupon.dto.CouponListResponse;
-import com.hanplane.domain.coupon.dto.CouponUpdateRequest;
-import com.hanplane.domain.coupon.dto.UserCouponResponse;
+import com.hanplane.domain.coupon.dto.*;
 import com.hanplane.domain.coupon.entity.Coupon;
 import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.repository.CouponElasticsearchRepository;
 import com.hanplane.domain.coupon.repository.CouponRepository;
+import com.hanplane.domain.coupon.repository.CouponRepositoryCustom;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.global.exception.BusinessException;
 import com.hanplane.global.exception.ErrorCode;
@@ -91,18 +89,23 @@ public class CouponInfoService {
 
     }
 
-    public Page<CouponListResponse> searchCoupon(String keyword, Pageable pageable) {
+    public Page<CouponListResponse> searchCoupon(CouponSearchCondition condition, Pageable pageable) {
 
-        return couponRepository.findByNameContainingAndDeletedAtIsNull(keyword, pageable)
-                .map(CouponListResponse :: from);
+        return couponRepository.searchCoupons(condition, pageable).map(CouponListResponse::from);
     }
 
-    public Page<CouponListResponse> elasticsearchCoupon(String keyword, Pageable pageable) {
-        if(couponElasticsearchRepository == null) {
-            return searchCoupon(keyword, pageable);
+    public Page<CouponListResponse> elasticsearchCoupon(CouponSearchCondition condition, Pageable pageable) {
+
+        if(true) {
+            return searchCoupon(condition, pageable);
         }
 
-        return couponElasticsearchRepository.findByNameContaining(keyword, pageable)
+
+        if(couponElasticsearchRepository == null) {
+            return searchCoupon(condition, pageable);
+        }
+
+        return couponElasticsearchRepository.findByNameContaining(condition.getName(), pageable)
                 .map(CouponListResponse :: from);
     }
 
