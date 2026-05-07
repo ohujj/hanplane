@@ -37,6 +37,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/coupons/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/coupons/sync").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/coupons").authenticated()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

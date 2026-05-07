@@ -1,24 +1,28 @@
 package com.hanplane.domain.coupon.service;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
 import com.hanplane.domain.coupon.CouponCreateEvent;
 import com.hanplane.domain.coupon.CouponDeleteEvent;
+import com.hanplane.domain.coupon.CouponDocument;
 import com.hanplane.domain.coupon.CouponUpdateEvent;
 import com.hanplane.domain.coupon.dto.*;
 import com.hanplane.domain.coupon.entity.Coupon;
-import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.repository.CouponElasticsearchRepository;
 import com.hanplane.domain.coupon.repository.CouponRepository;
-import com.hanplane.domain.coupon.repository.CouponRepositoryCustom;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.global.exception.BusinessException;
 import com.hanplane.global.exception.ErrorCode;
-import com.hanplane.global.jwt.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +40,8 @@ public class CouponInfoService {
     private final CouponRepository couponRepository;
     private final UserCouponRepository userCouponRepository;
     private final ApplicationEventPublisher eventPublisher;
+    @Autowired(required = false)
+    private ElasticsearchOperations elasticsearchOperations;
 
     @Autowired(required = false)
     private CouponElasticsearchRepository couponElasticsearchRepository;
@@ -96,17 +102,44 @@ public class CouponInfoService {
 
     public Page<CouponListResponse> elasticsearchCoupon(CouponSearchCondition condition, Pageable pageable) {
 
-        if(true) {
-            return searchCoupon(condition, pageable);
-        }
-
-
         if(couponElasticsearchRepository == null) {
             return searchCoupon(condition, pageable);
         }
 
-        return couponElasticsearchRepository.findByNameContaining(condition.getName(), pageable)
-                .map(CouponListResponse :: from);
+
+        List<Query> musts = new ArrayList<>();
+
+        String name = condition.getName();
+        Integer discountRate = condition.getDiscountRate();
+        LocalDateTime expiryDate = condition.getExpiryDate();
+
+        if(name != null && !name.trim().isEmpty()) {
+            musts.add(Query.of(q -> q.matchPhrase(m -> m.field("name").query(name))));
+        }
+
+        if(discountRate != null) {
+            musts.add(Query.of(q -> q.match(m -> m.field("discountRate").query(discountRate))));
+        }
+
+        if(expiryDate != null) {
+            String expiryDateStr = expiryDate.toString();
+            musts.add(Query.of(q -> q.range(r -> r.untyped(u -> u.field("expiredAt").gte(JsonData.of(expiryDateStr))))));
+        }
+
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q
+                        .bool(b -> b.must(musts)))
+                .withPageable(pageable)
+                .build();
+
+        SearchHits<CouponDocument> searchHits = elasticsearchOperations.search(query, CouponDocument.class);
+
+        return new PageImpl<>(
+                searchHits.getSearchHits().stream()
+                        .map(hit -> CouponListResponse.from(hit.getContent()))
+                        .collect(Collectors.toList()),
+                pageable,
+                searchHits.getTotalHits());
     }
 
 
