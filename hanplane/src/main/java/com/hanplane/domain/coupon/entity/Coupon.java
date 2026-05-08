@@ -1,5 +1,6 @@
 package com.hanplane.domain.coupon.entity;
 
+import com.hanplane.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "coupon")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Coupon {
+public class Coupon extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,8 +33,6 @@ public class Coupon {
 
     @Column(nullable = false)
     private LocalDateTime expiredAt;
-
-    private LocalDateTime deletedAt;
 
     @Builder
     private Coupon(String name, int discountRate, int totalQuantity, LocalDateTime expiredAt) {
@@ -63,6 +62,4 @@ public class Coupon {
     public void updateExpiredAt(LocalDateTime expiredAt) {
         this.expiredAt = expiredAt;
     }
-
-    public void delete() {this.deletedAt = LocalDateTime.now();}
 }

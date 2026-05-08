@@ -1,7 +1,8 @@
 package com.hanplane.domain.auth.entity;
 
     import com.hanplane.domain.user.entity.User;
-import jakarta.persistence.*;
+    import com.hanplane.global.entity.BaseEntity;
+    import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
     import lombok.Getter;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "refresh_token")
-public class RefreshToken {
+public class RefreshToken extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -22,11 +23,11 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(nullable = false)
     private String token;
 
+    @Column(nullable = false)
     private LocalDateTime expiresAt;
-
-    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Builder
     private RefreshToken(User user, String token, LocalDateTime expiresAt) {

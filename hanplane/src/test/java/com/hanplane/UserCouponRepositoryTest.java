@@ -49,7 +49,6 @@ public class UserCouponRepositoryTest {
         UserCoupon userCoupon = UserCoupon.builder()
                 .user(savedUser)
                 .coupon(savedCoupon)
-                .issuedAt(LocalDateTime.now())
                 .status(CouponStatus.UNUSED)
                 .build();
         //when

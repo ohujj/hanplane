@@ -51,7 +51,6 @@ public class CouponIssueService {
                 .user(user)
                 .coupon(coupon)
                 .status(CouponStatus.UNUSED)
-                .issuedAt(LocalDateTime.now())
                 .build();
 
         UserCoupon save = userCouponRepository.save(userCoupon);
@@ -83,7 +82,6 @@ public class CouponIssueService {
                 .user(user)
                 .coupon(coupon)
                 .status(CouponStatus.UNUSED)
-                .issuedAt(LocalDateTime.now())
                 .build();
 
         UserCoupon save = userCouponRepository.save(userCoupon);

@@ -24,7 +24,6 @@ public class UserCouponResponse {
                 .couponName(userCoupon.getCoupon().getName())
                 .userName(userCoupon.getUser().getName())
                 .email(userCoupon.getUser().getEmail())
-                .issuedAt(userCoupon.getIssuedAt())
                 .status(userCoupon.getStatus())
                 .usedAt(userCoupon.getUsedAt())
                 .build();

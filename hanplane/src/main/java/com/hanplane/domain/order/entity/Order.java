@@ -1,5 +1,7 @@
-package com.hanplane.domain.coupon.entity;
+package com.hanplane.domain.order.entity;
 
+import com.hanplane.domain.coupon.entity.Coupon;
+import com.hanplane.domain.product.entity.Product;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -7,15 +9,15 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "user_coupon")
-public class UserCoupon extends BaseEntity {
+@Table(name = "orders")
+public class Order extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,20 +27,21 @@ public class UserCoupon extends BaseEntity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "coupon_id", nullable = false)
+    @JoinColumn(name = "coupon_id", nullable = true)
     private Coupon coupon;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private CouponStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
-    @Column()
-    private LocalDateTime usedAt;
+    @Column(nullable = false)
+    private int price;
 
     @Builder
-    public UserCoupon(User user, Coupon coupon, CouponStatus status) {
+    private Order(User user, Coupon coupon, Product product, int price) {
         this.user = user;
         this.coupon = coupon;
-        this.status = status;
+        this.product = product;
+        this.price = price;
     }
 }

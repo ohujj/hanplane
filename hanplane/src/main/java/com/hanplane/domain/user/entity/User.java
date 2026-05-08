@@ -1,6 +1,7 @@
 package com.hanplane.domain.user.entity;
 
 import com.hanplane.domain.coupon.entity.UserCoupon;
+import com.hanplane.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,7 +15,7 @@ import java.util.List;
 @Table(name = "users") //users 라는 테이블로 매핑
 @Getter //롬복의 게터
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //기본 생성자 생성, but protected 레벨로 생성해서 무차별 생성 방지(JPA를 위해 필요한 어노테이션임)
-public class User {
+public class User extends BaseEntity {
 
     @Id //PK 선언
     @GeneratedValue(strategy = GenerationType.IDENTITY)
