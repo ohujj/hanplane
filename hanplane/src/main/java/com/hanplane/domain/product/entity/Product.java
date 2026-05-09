@@ -42,4 +42,28 @@ public class Product extends BaseEntity {
         this.availQuantity = availQuantity;
         this.expiredAt = expiredAt;
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateExpiredAt(LocalDateTime expiredAt) {
+        this.expiredAt = expiredAt;
+    }
+
+    public void updateTotalQuantity(int totalQuantity) {
+        this.totalQuantity = totalQuantity;
+    }
+
+    public void updateAvailQuantity(int availQuantity) {
+        this.availQuantity = availQuantity;
+    }
+
+    public void updatePrice(int price) {
+        this.price = price;
+    }
+
+    public void deleteProduct() {
+        delete();
+    }
 }

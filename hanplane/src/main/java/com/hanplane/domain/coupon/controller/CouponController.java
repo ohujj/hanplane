@@ -12,6 +12,7 @@ import com.hanplane.global.jwt.UserPrincipal;
 import com.hanplane.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.Response;
@@ -68,7 +69,7 @@ public class CouponController {
     }
 
     @PatchMapping("/{couponId}")
-    public ResponseEntity<ApiResponse<Void>> updateCoupon(@PathVariable("couponId") Long couponId, @RequestBody CouponUpdateRequest couponUpdateRequest, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    public ResponseEntity<ApiResponse<Void>> updateCoupon(@PathVariable("couponId") Long couponId, @RequestBody @Valid CouponUpdateRequest couponUpdateRequest, @AuthenticationPrincipal UserPrincipal userPrincipal) {
         couponInfoService.updateCoupon(couponId, couponUpdateRequest);
 
         return ResponseEntity.ok(ApiResponse.success());
@@ -83,7 +84,7 @@ public class CouponController {
     }
 
     @PostMapping()
-    public ResponseEntity<ApiResponse<Void>> createCoupon(@RequestBody CouponCreateRequest couponCreateRequest) {
+    public ResponseEntity<ApiResponse<Void>> createCoupon(@RequestBody @Valid CouponCreateRequest couponCreateRequest) {
         couponInfoService.createCoupon(couponCreateRequest);
 
         return ResponseEntity.ok(ApiResponse.success());

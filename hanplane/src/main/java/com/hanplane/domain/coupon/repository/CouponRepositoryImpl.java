@@ -20,7 +20,7 @@ import static com.querydsl.jpa.JPAExpressions.selectFrom;
 
 @Repository
 @RequiredArgsConstructor
-public class    CouponRepositoryImpl implements CouponRepositoryCustom {
+public class CouponRepositoryImpl implements CouponRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
@@ -42,6 +42,8 @@ public class    CouponRepositoryImpl implements CouponRepositoryCustom {
                 .where(name != null ? coupon.name.contains(name) : null,
                         discountRate != null ? coupon.discountRate.eq(discountRate) : null,
                         expiryDate != null ? coupon.expiredAt.after(expiryDate) : null)
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
 
         return PageableExecutionUtils.getPage(list, pageable, count::fetchOne);
