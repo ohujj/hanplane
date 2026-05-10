@@ -25,8 +25,13 @@ public enum ErrorCode {
     //6000 - user
     USER_NOT_FOUND(404, 6001, "유저가 존재하지 않습니다"),
 
+    //6100 - userCoupon
+    USER_NOT_HAVE_COUPON_ID(400, 6101, "해당 쿠폰을 보유하고 있지 않습니다."),
+
     //7000 - product
     PRODUCT_NOT_FOUND(404, 7001, "상품이 존재하지 않습니다."),
+
+
 
     //9000 - etc
     LOCK_TRY_FAIL(400, 9001,"락 획득에 실패하였습니다."),
