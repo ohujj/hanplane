@@ -12,13 +12,8 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-public class BaseEntity {
+public class BaseTimeEntity extends BaseEntity {
 
-    @CreatedDate
-    @Column(updatable = false, nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
-    public void update() {this.updatedAt = LocalDateTime.now();}
+    private LocalDateTime deletedAt;
+    public void delete() {this.deletedAt = LocalDateTime.now();}
 }

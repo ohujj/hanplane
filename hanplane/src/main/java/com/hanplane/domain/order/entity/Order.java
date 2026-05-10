@@ -1,7 +1,6 @@
 package com.hanplane.domain.order.entity;
 
 import com.hanplane.domain.coupon.entity.Coupon;
-import com.hanplane.domain.product.entity.Product;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.global.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -10,7 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -30,18 +30,26 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "coupon_id", nullable = true)
     private Coupon coupon;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @Column(nullable = false)
+    private int totalPrice;
 
     @Column(nullable = false)
-    private int price;
+    @Enumerated(EnumType.STRING)
+    private OrderStatus orderStatus;
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY) // 1 대 다 관계, 매핑, lazy로 해서 n+1 문제 제어
+    private List<OrderItem> orderItems = new ArrayList<>();
 
     @Builder
-    private Order(User user, Coupon coupon, Product product, int price) {
+    private Order(User user, Coupon coupon, int totalPrice, OrderStatus orderStatus) {
         this.user = user;
         this.coupon = coupon;
-        this.product = product;
-        this.price = price;
+        this.totalPrice = totalPrice;
+        this.orderStatus = orderStatus;
+    }
+
+    public void updateOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+        update();
     }
 }

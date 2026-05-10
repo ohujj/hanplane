@@ -7,7 +7,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 
@@ -30,15 +29,20 @@ public class UserCoupon extends BaseEntity {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private CouponStatus status;
+    private CouponStatus couponStatus;
 
     @Column()
     private LocalDateTime usedAt;
 
     @Builder
-    public UserCoupon(User user, Coupon coupon, CouponStatus status) {
+    public UserCoupon(User user, Coupon coupon, CouponStatus couponStatus) {
         this.user = user;
         this.coupon = coupon;
-        this.status = status;
+        this.couponStatus = couponStatus;
+    }
+
+    public void updateCouponStatus(CouponStatus couponStatus) {
+        this.couponStatus = couponStatus;
+        update();
     }
 }

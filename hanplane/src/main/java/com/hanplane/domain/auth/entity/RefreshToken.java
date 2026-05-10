@@ -1,12 +1,12 @@
 package com.hanplane.domain.auth.entity;
 
-    import com.hanplane.domain.user.entity.User;
-    import com.hanplane.global.entity.BaseEntity;
-    import jakarta.persistence.*;
+import com.hanplane.domain.user.entity.User;
+import com.hanplane.global.entity.BaseEntity;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
-    import lombok.Getter;
-    import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
