@@ -28,8 +28,10 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Void>> createOrder(
             @RequestBody @Valid OrderCreateRequest orderCreateRequest,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
-            orderService.createOrder(orderCreateRequest, userPrincipal.userId());
+        orderService.createOrder(orderCreateRequest, userPrincipal.userId());
 
-        }
-
+        return ResponseEntity.ok(ApiResponse.success());
     }
+
+
+}

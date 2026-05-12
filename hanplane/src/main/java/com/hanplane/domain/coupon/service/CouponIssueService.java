@@ -50,7 +50,7 @@ public class CouponIssueService {
         UserCoupon userCoupon = UserCoupon.builder()
                 .user(user)
                 .coupon(coupon)
-                .status(CouponStatus.UNUSED)
+                .couponStatus(CouponStatus.UNUSED)
                 .build();
 
         UserCoupon save = userCouponRepository.save(userCoupon);
@@ -81,7 +81,7 @@ public class CouponIssueService {
         UserCoupon userCoupon = UserCoupon.builder()
                 .user(user)
                 .coupon(coupon)
-                .status(CouponStatus.UNUSED)
+                .couponStatus(CouponStatus.UNUSED)
                 .build();
 
         UserCoupon save = userCouponRepository.save(userCoupon);
