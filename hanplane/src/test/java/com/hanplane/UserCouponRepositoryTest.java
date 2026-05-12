@@ -49,7 +49,7 @@ public class UserCouponRepositoryTest {
         UserCoupon userCoupon = UserCoupon.builder()
                 .user(savedUser)
                 .coupon(savedCoupon)
-                .status(CouponStatus.UNUSED)
+                .couponStatus(CouponStatus.UNUSED)
                 .build();
         //when
         UserCoupon save = userCouponRepository.save(userCoupon);
