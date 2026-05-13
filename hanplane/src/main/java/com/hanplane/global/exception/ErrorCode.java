@@ -31,10 +31,15 @@ public enum ErrorCode {
     //7000 - product
     PRODUCT_NOT_FOUND(404, 7001, "상품이 존재하지 않습니다."),
 
+    //8000 - order
+    ORDER_NOT_FOUND(404, 8001, "주문이 존재하지 않습니다."),
+    ORDER_STATUS_IS_NOT_PENDING(400, 8002, "주문의 상태가 진행 중이 아닙니다."),
 
+    //9000 - payment
+    PAYMENT_NOT_FOUND(404, 9001, "결제가 존재하지 않습니다."),
 
-    //9000 - etc
-    LOCK_TRY_FAIL(400, 9001,"락 획득에 실패하였습니다."),
+    //10000 - etc
+    LOCK_TRY_FAIL(400, 10001,"락 획득에 실패하였습니다."),
 
 
 

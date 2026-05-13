@@ -1,12 +1,18 @@
 package com.hanplane.domain.order.service;
 
+import com.hanplane.domain.coupon.entity.Coupon;
+import com.hanplane.domain.coupon.entity.CouponStatus;
 import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.repository.CouponRepository;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.domain.order.dto.OrderCreateRequest;
 import com.hanplane.domain.order.dto.OrderItemRequest;
+import com.hanplane.domain.order.entity.Order;
+import com.hanplane.domain.order.entity.OrderItem;
+import com.hanplane.domain.order.entity.OrderStatus;
 import com.hanplane.domain.order.repository.OrderItemRepository;
 import com.hanplane.domain.order.repository.OrderRepository;
+import com.hanplane.domain.product.entity.Product;
 import com.hanplane.domain.product.repository.ProductRepository;
 import com.hanplane.domain.user.entity.Role;
 import com.hanplane.domain.user.entity.User;
@@ -17,14 +23,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -78,5 +88,154 @@ class OrderServiceTest {
                 orderService.createOrder(request, userId));
 
     }
+
+    @Test
+    void 쿠폰없음_예외발생() {
+        Long userId = 1L;
+
+        User user = User.builder()
+                .email("Test").password("1234").role(Role.ADMIN).name("test").build();
+
+        given(userRepository.findById(userId))
+                .willReturn(Optional.of(user));
+
+        Coupon coupon = Coupon.builder().name("test").discountRate(50).totalQuantity(10).expiredAt(LocalDateTime.now().plusMonths(3)).build();
+
+        UserCoupon userCoupon = UserCoupon.builder()
+                .user(user).coupon(coupon).couponStatus(CouponStatus.UNUSED).build();
+
+        given(userCouponRepository.findByUserIdCouponFetch(userId))
+                .willReturn(List.of(userCoupon));
+
+        given(couponRepository.findById(1L))
+                .willReturn(Optional.empty());
+
+
+        OrderCreateRequest request = OrderCreateRequest.builder()
+                .orderItems(List.of()).couponId(1L).build();
+
+        ReflectionTestUtils.setField(coupon, "id", 1L);
+
+        assertThrows(BusinessException.class, () ->
+                orderService.createOrder(request, userId)
+        );
+
+
+    }
+
+    @Test
+    void 상품없음_예외발생() {
+        Long userId = 1L;
+
+        User user = User.builder()
+                .email("test").password("1234").role(Role.ADMIN).name("test").build();
+
+        given(userRepository.findById(userId))
+                .willReturn(Optional.of(user));
+
+        OrderItemRequest orderItemRequest = OrderItemRequest.builder()
+                .productId(1L).quantity(1).build();
+
+        OrderCreateRequest request = OrderCreateRequest.builder()
+                .orderItems(List.of(orderItemRequest)).couponId(null).build();
+
+        given(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .willReturn(Optional.empty());
+
+        assertThrows(BusinessException.class, () ->
+                orderService.createOrder(request, userId)
+        );
+
+    }
+
+    @Test
+    void 쿠폰있음_주문성공() {
+        User user = User.builder()
+                .email("test").password("1234").role(Role.ADMIN).name("test").build();
+
+        Long userId = 1L;
+
+        given(userRepository.findById(userId))
+                .willReturn(Optional.of(user));
+
+        Coupon coupon = Coupon.builder()
+                .name("test").discountRate(20).totalQuantity(10).expiredAt(LocalDateTime.now().plusMonths(6)).build();
+
+
+        UserCoupon userCoupon = UserCoupon
+                .builder()
+                .user(user).coupon(coupon).couponStatus(CouponStatus.UNUSED).build();
+
+        ReflectionTestUtils.setField(coupon, "id", 1L);
+
+        Product product = Product.builder()
+                .name("test").price(1000).totalQuantity(10).availQuantity(10).expiredAt(LocalDateTime.now().plusMonths(6)).build();
+
+        ReflectionTestUtils.setField(userCoupon, "id", 1L);
+
+        ReflectionTestUtils.setField(product, "id", 1L);
+
+        given(userCouponRepository.findByUserIdCouponFetch(userId))
+                .willReturn(List.of(userCoupon));
+
+
+        Long couponId = 1L;
+
+        given(couponRepository.findById(couponId))
+                .willReturn(Optional.of(coupon));
+
+        OrderItemRequest orderItemRequest = OrderItemRequest.builder()
+                .productId(1L).quantity(3).build();
+
+        List<OrderItemRequest> list = new ArrayList<>();
+        list.add(orderItemRequest);
+
+        OrderCreateRequest orderCreateRequest = OrderCreateRequest
+                .builder()
+                .orderItems(list).couponId(couponId).build();
+
+        given(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .willReturn(Optional.of(product));
+
+        orderService.createOrder(orderCreateRequest, userId);
+
+        verify(orderItemRepository).saveAll(any());
+
+    }
+
+    @Test
+    void 쿠폰없음_주문성공() {
+        User user = User.builder()
+                .email("test").password("1234").role(Role.ADMIN).name("test").build();
+
+        Long userId = 1L;
+
+        given(userRepository.findById(userId))
+                .willReturn(Optional.of(user));
+
+        Product product = Product.builder()
+                .name("test").price(1000).totalQuantity(10).availQuantity(10).expiredAt(LocalDateTime.now().plusMonths(6)).build();
+
+        ReflectionTestUtils.setField(product, "id", 1L);
+
+        OrderItemRequest orderItemRequest = OrderItemRequest.builder()
+                .productId(1L).quantity(3).build();
+
+        List<OrderItemRequest> list = new ArrayList<>();
+        list.add(orderItemRequest);
+
+        OrderCreateRequest orderCreateRequest = OrderCreateRequest
+                .builder()
+                .orderItems(list).couponId(null).build();
+
+        given(productRepository.findByIdAndDeletedAtIsNull(1L))
+                .willReturn(Optional.of(product));
+
+        orderService.createOrder(orderCreateRequest, userId);
+
+        verify(orderItemRepository).saveAll(any());
+
+    }
+
 
 }
