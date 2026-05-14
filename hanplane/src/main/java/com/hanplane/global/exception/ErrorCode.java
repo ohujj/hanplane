@@ -41,6 +41,10 @@ public enum ErrorCode {
     //10000 - etc
     LOCK_TRY_FAIL(400, 10001,"락 획득에 실패하였습니다."),
 
+    //11000 - portone
+    PG_CALL_FAILED(400, 11001, "PG 호출에 실패하였습니다"),
+    PG_PAYMENT_NOT_PAID(400, 11002, "PG 결제가 실패하였습니다."),
+    PAYMENT_AMOUNT_MISMATCH(400, 11003, "PG 결제 금액 위변조 감지"),
 
 
 
