@@ -51,8 +51,11 @@ public class PaymentAfterService {
     @Transactional
     public void illegalRequestProcess(PaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderIdAndPayStatus(request.getOrderId(), PayStatus.PROCESSING).orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+        payment.updatePayStatus(PayStatus.ILLEGAL);
 
         Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
-        order.updateOrderStatus(OrderStatus.PAID);
+        order.updateOrderStatus(OrderStatus.ILLEGAL);
+
+        //pg 취소 호출
     }
 }

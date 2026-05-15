@@ -4,5 +4,5 @@ public enum PayStatus {
 
     PENDING, PROCESSING,
     SUCCESS, CANCEL, FAIL,
-    REFUNDED;
+    REFUNDED, ILLEGAL;
 }

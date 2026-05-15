@@ -29,7 +29,7 @@ public class Payment extends BaseEntity {
     @Column
     private String transactionId;
 
-    @Column
+    @Column(length = 500)
     private String payMethod;
 
     @Column(nullable = false)

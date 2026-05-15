@@ -30,7 +30,7 @@ public class PaymentConfirmService {
         Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         OrderStatus orderStatus = order.getOrderStatus();
 
-        if (orderStatus.equals(OrderStatus.CANCELLED) || orderStatus.equals(OrderStatus.PAID) || orderStatus.equals(OrderStatus.EXPIRED)) {
+        if (orderStatus.equals(OrderStatus.CANCEL) || orderStatus.equals(OrderStatus.PAID) || orderStatus.equals(OrderStatus.EXPIRED)) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_IS_NOT_PENDING);
         }
 

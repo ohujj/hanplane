@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hanplane 결제 테스트</title>
+  <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 480px;
+      padding: 40px;
+      border: 1px solid #2a2a2a;
+      background: #111;
+    }
+
+    .header {
+      margin-bottom: 32px;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 13px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    .header p {
+      font-size: 22px;
+      margin-top: 6px;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e0e0e0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: #555;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #e0e0e0;
+      color: #0a0a0a;
+      border: none;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+
+    button:hover { background: #fff; }
+    button:active { background: #bbb; }
+
+    .log {
+      margin-top: 28px;
+      padding: 16px;
+      background: #0d0d0d;
+      border: 1px solid #1e1e1e;
+      min-height: 80px;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .log-label {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .ok  { color: #4caf50; }
+    .err { color: #f44336; }
+    .info { color: #888; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Hanplane</h1>
+    <p>결제 테스트</p>
+  </div>
+
+  <div class="field">
+    <label>Order ID</label>
+    <input id="orderId" type="number" placeholder="주문 ID (예: 1)" value="1">
+  </div>
+  <div class="field">
+    <label>결제 금액 (원)</label>
+    <input id="amount" type="number" placeholder="결제 금액" value="10000">
+  </div>
+  <div class="field">
+    <label>주문자 이름</label>
+    <input id="buyerName" placeholder="홍길동" value="테스트유저">
+  </div>
+  <div class="field">
+    <label>이메일</label>
+    <input id="buyerEmail" placeholder="test@test.com" value="test@test.com">
+  </div>
+  <div class="field">
+    <label>서버 URL</label>
+    <input id="serverUrl" placeholder="http://localhost:8080" value="http://localhost:8080">
+  </div>
+
+  <button onclick="requestPayment()">결제 요청</button>
+
+  <div class="log">
+    <div class="log-label">Log</div>
+    <div id="logArea"><span class="info">대기 중...</span></div>
+  </div>
+</div>
+
+<script>
+  // ✅ 여기에 본인 값 입력
+const STORE_ID    = "store-767f0b49-d787-470a-90b2-d694991d385e";
+const CHANNEL_KEY = "channel-key-74848ec3-cff2-475e-94a0-0e10a9c085a4";
+
+  function log(msg, type = 'info') {
+    const el = document.getElementById('logArea');
+    el.innerHTML += `<div class="${type}">${msg}</div>`;
+  }
+
+  async function requestPayment() {
+    const orderId   = document.getElementById('orderId').value;
+    const amount    = parseInt(document.getElementById('amount').value);
+    const buyerName = document.getElementById('buyerName').value;
+    const buyerEmail= document.getElementById('buyerEmail').value;
+    const serverUrl = document.getElementById('serverUrl').value;
+
+    const paymentId = `hanplane-${orderId}-${Date.now()}`;
+
+    document.getElementById('logArea').innerHTML = '';
+    log(`결제 요청 시작... paymentId: ${paymentId}`);
+
+    try {
+      const response = await PortOne.requestPayment({
+        storeId: STORE_ID,
+        channelKey: CHANNEL_KEY,
+        paymentId: paymentId,
+        orderName: `hanplane 주문 #${orderId}`,
+        totalAmount: amount,
+        currency: "CURRENCY_KRW",
+        payMethod: "CARD",
+        customer: {
+          fullName: buyerName,
+          email: buyerEmail,
+        },
+      });
+
+      if (response.code) {
+        log(`❌ 결제 실패: ${response.message}`, 'err');
+        return;
+      }
+
+      log(`✅ 결제창 완료. paymentId: ${response.paymentId}`, 'ok');
+      log(`서버 검증 요청 중...`);
+
+      const confirmRes = await fetch(`${serverUrl}/api/payments/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: parseInt(orderId),
+          paymentId: response.paymentId,
+          txId: response.transactionId ?? null,
+        }),
+      });
+
+      if (confirmRes.ok) {
+        log(`✅ 서버 검증 성공!`, 'ok');
+      } else {
+        const errText = await confirmRes.text();
+        log(`❌ 서버 검증 실패: ${errText}`, 'err');
+      }
+
+    } catch (e) {
+      log(`❌ 오류: ${e.message}`, 'err');
+    }
+  }
+</script>
+</body>
+</html>
