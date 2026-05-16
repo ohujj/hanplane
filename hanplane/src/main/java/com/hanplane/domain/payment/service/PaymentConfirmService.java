@@ -3,7 +3,7 @@ package com.hanplane.domain.payment.service;
 import com.hanplane.domain.order.entity.Order;
 import com.hanplane.domain.order.entity.OrderStatus;
 import com.hanplane.domain.order.repository.OrderRepository;
-import com.hanplane.domain.payment.PaymentRepository;
+import com.hanplane.domain.payment.repository.PaymentRepository;
 import com.hanplane.domain.payment.dto.PaymentConfirmRequest;
 import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;

@@ -31,12 +31,21 @@ public class OrderItem {
     @Column(nullable = false)
     private int price;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderItemStatus status;
+
     @Builder
     private OrderItem(Product product, Order order, int quantity, int price) {
         this.product = product;
         this.order = order;
         this.quantity = quantity;
         this.price = price;
+        this.status = OrderItemStatus.PENDING;
+    }
+
+    public void updateStatus(OrderItemStatus status) {
+        this.status = status;
     }
 
 }

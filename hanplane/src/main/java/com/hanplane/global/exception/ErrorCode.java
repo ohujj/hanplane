@@ -7,6 +7,7 @@ public enum ErrorCode {
     //1000 - global
     ACTIVE_PROFILE_LOCAL(400, 1001, "운영 환경에서는 호출이 불가능합니다."),
     INVALID_REQUEST_PARAMETER(400, 1002, "잘못된 요청 파라미터입니다."),
+    ILLEGAL_REQUEST_PARAMETER(403, 1003, "데이터에 대한 권한이 없습니다."),
 
     //4000 - auth
     PASSWORD_NOT_EQUAL(400, 4001,"비밀번호가 틀렸습니다."),
