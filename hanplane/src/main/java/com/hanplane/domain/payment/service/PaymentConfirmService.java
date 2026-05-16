@@ -26,9 +26,13 @@ public class PaymentConfirmService {
     private final PaymentRepository paymentRepository;
 
     @Transactional
-    public Payment confirmOrder(PaymentConfirmRequest request) {
+    public Payment confirmOrder(Long userId, PaymentConfirmRequest request) {
         Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         OrderStatus orderStatus = order.getOrderStatus();
+
+        if (!userId.equals(order.getUser().getId())) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST_PARAMETER);
+        }
 
         if (orderStatus.equals(OrderStatus.CANCEL) || orderStatus.equals(OrderStatus.PAID) || orderStatus.equals(OrderStatus.EXPIRED)) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_IS_NOT_PENDING);

@@ -21,13 +21,11 @@ public class PaymentService {
     private final PortOneClient portOneClient;
     private final PaymentAfterService paymentAfterService;
 
-    public void confirm(PaymentConfirmRequest request) {
-        Payment payment = paymentConfirmService.confirmOrder(request);
+    public void confirm(Long userId, PaymentConfirmRequest request) {
+        Payment payment = paymentConfirmService.confirmOrder(userId, request);
 
         payProcess(request, payment);
     }
-
-
 
     public void payProcess(PaymentConfirmRequest request, Payment payment) {
         io.portone.sdk.server.payment.Payment pgPayment;
