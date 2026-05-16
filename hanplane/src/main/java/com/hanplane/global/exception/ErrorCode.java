@@ -35,9 +35,12 @@ public enum ErrorCode {
     //8000 - order
     ORDER_NOT_FOUND(404, 8001, "주문이 존재하지 않습니다."),
     ORDER_STATUS_IS_NOT_PENDING(400, 8002, "주문의 상태가 진행 중이 아닙니다."),
+    ORDER_STATUS_IS_NOT_PAID(400, 8003, "주문의 상태가 결제가 아닙니다."),
+    ALREADY_REFUNDED_ORDER_ITEM(400, 8004, "이미 환불된 주문입니다."),
 
     //9000 - payment
     PAYMENT_NOT_FOUND(404, 9001, "결제가 존재하지 않습니다."),
+    PAYMENT_IS_NOT_SUCCESS(400, 9002, "결제된 데이터가 아니라 환불이 불가능합니다."),
 
     //10000 - etc
     LOCK_TRY_FAIL(400, 10001,"락 획득에 실패하였습니다."),
@@ -46,8 +49,6 @@ public enum ErrorCode {
     PG_CALL_FAILED(400, 11001, "PG 호출에 실패하였습니다"),
     PG_PAYMENT_NOT_PAID(400, 11002, "PG 결제가 실패하였습니다."),
     PAYMENT_AMOUNT_MISMATCH(400, 11003, "PG 결제 금액 위변조 감지"),
-
-
 
     ;
 

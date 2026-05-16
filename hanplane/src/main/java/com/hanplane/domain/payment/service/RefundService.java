@@ -23,8 +23,8 @@ public class RefundService {
 
     public void RefundProcess(Long userId, RefundRequest refundRequest) {
         Refund refund = refundSaveService.refundSaveProcess(userId, refundRequest);
-        Payment payment = refund.getPayment();
 
+        Payment payment = refund.getPayment();
         int totalPrice = refund.getAmount();
 
         //PG 환불 요청

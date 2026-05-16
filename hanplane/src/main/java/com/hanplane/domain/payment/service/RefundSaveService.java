@@ -5,6 +5,7 @@ import com.hanplane.domain.order.entity.OrderItem;
 import com.hanplane.domain.order.entity.OrderItemStatus;
 import com.hanplane.domain.order.entity.OrderStatus;
 import com.hanplane.domain.payment.dto.RefundRequest;
+import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;
 import com.hanplane.domain.payment.entity.Refund;
 import com.hanplane.domain.payment.entity.RefundStatus;
@@ -31,7 +32,19 @@ public class RefundSaveService {
     public Refund refundSaveProcess(Long userId, RefundRequest refundRequest) {
         Payment payment = paymentRepository.findByIdWithOrderAndItems(refundRequest.getPaymentId()).orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
 
+        PayStatus payStatus = payment.getPayStatus();
+        if (!payStatus.equals(PayStatus.SUCCESS)) {
+            throw new BusinessException(ErrorCode.PAYMENT_IS_NOT_SUCCESS);
+        }
+
         Order order = payment.getOrder();
+
+        OrderStatus orderStatus = order.getOrderStatus();
+
+        if (!orderStatus.equals(OrderStatus.PAID) && !orderStatus.equals(OrderStatus.PARTIAL_REFUNDED)) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_IS_NOT_PAID);
+        }
+
         Long orderUserId = order.getUser().getId();
         if (!userId.equals(orderUserId)) {
             throw new BusinessException(ErrorCode.ILLEGAL_REQUEST_PARAMETER);
@@ -44,6 +57,14 @@ public class RefundSaveService {
         List<Long> orderItemIds = orderItems.stream()
                 .map(OrderItem::getId)
                 .toList();
+
+        boolean hasRefunded = orderItems.stream()
+                .filter(item -> requestIds.contains(item.getId()))
+                .anyMatch(item -> item.getStatus().equals(OrderItemStatus.REFUNDED));
+
+        if (hasRefunded) {
+            throw new BusinessException(ErrorCode.ALREADY_REFUNDED_ORDER_ITEM);
+        }
 
         if (!orderItemIds.containsAll(requestIds)) {
             throw new BusinessException(ErrorCode.ILLEGAL_REQUEST_PARAMETER);
