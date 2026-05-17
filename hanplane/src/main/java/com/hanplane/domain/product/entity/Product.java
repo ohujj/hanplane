@@ -1,6 +1,8 @@
 package com.hanplane.domain.product.entity;
 
 import com.hanplane.global.entity.BaseTimeEntity;
+import com.hanplane.global.exception.BusinessException;
+import com.hanplane.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -70,5 +72,19 @@ public class Product extends BaseTimeEntity {
 
     public void deleteProduct() {
         delete();
+    }
+
+    public void decrease(int quantity) {
+        if(this.availQuantity < quantity) {
+            throw new BusinessException(ErrorCode.PRODUCT_SOLD_OUT);
+        }
+
+        this.availQuantity -= quantity;
+
+        update();
+    }
+    public void increase(int quantity) {
+        this.availQuantity += quantity;
+        update();
     }
 }

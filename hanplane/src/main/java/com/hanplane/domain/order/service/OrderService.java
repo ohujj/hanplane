@@ -72,6 +72,8 @@ public class OrderService {
             Product product = productRepository.findByIdAndDeletedAtIsNull(request.getProductId()).orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
             productMap.put(product.getId(), product);
 
+            product.decrease(request.getQuantity());
+
             int productPrice = product.getPrice() * request.getQuantity();
             totalPrice += productPrice;
         }

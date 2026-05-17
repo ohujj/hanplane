@@ -31,6 +31,7 @@ public enum ErrorCode {
 
     //7000 - product
     PRODUCT_NOT_FOUND(404, 7001, "상품이 존재하지 않습니다."),
+    PRODUCT_SOLD_OUT(400, 7002, "상품이 품절되었습니다."),
 
     //8000 - order
     ORDER_NOT_FOUND(404, 8001, "주문이 존재하지 않습니다."),
