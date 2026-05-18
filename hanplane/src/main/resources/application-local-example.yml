@@ -1,0 +1,40 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  datasource:
+    url: jdbc:mysql://localhost:3307/hanplane?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: password
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: never
+
+jwt:
+  secret: your-local-jwt-secret
+  expiration: 86400000
+  test-expiration: 5000
+  refresh-expiration: 604800000
+
+logging:
+  level:
+    tracer: TRACE
+
+portone:
+  secret: your-portone-secret
+  store-id: your-portone-store-id
