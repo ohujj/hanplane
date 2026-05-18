@@ -101,10 +101,7 @@ cp src/main/resources/application-local-example.yml src/main/resources/applicati
 
 복사 후 아래 값을 본인 로컬 환경에 맞게 수정합니다.
 
-DB username / password
-JWT secret
-PortOne secret
-PortOne store id
+DB username / password / JWT secret / PortOne secret / PortOne store id
 
 ## 도메인 구조
 
