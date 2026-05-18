@@ -83,6 +83,6 @@ public class CouponInfoService {
                 .expiredAt(couponCreateRequest.getExpiredAt())
                 .build();
 
-        Coupon savedCoupon = couponRepository.save(coupon);
+        couponRepository.save(coupon);
     }
 }

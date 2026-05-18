@@ -31,7 +31,7 @@ public class PaymentController {
     @PostMapping("/refund")
     public ResponseEntity<Void> refund(@RequestBody RefundRequest request,
                                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        refundService.RefundProcess(userPrincipal.userId(), request);
+        refundService.refundProcess(userPrincipal.userId(), request);
         return ResponseEntity.ok().build();
     }
 }

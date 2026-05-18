@@ -21,7 +21,7 @@ public class RefundService {
     private final PortOneClient portOneClient;
     private final RefundSaveService refundSaveService;
 
-    public void RefundProcess(Long userId, RefundRequest refundRequest) {
+    public void refundProcess(Long userId, RefundRequest refundRequest) {
         Refund refund = refundSaveService.refundSaveProcess(userId, refundRequest);
 
         Payment payment = refund.getPayment();
