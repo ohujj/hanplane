@@ -2,10 +2,8 @@ package com.hanplane.domain.coupon.controller;
 
 
 import com.hanplane.domain.coupon.dto.*;
-import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.service.CouponInfoService;
 import com.hanplane.domain.coupon.service.CouponService;
-import com.hanplane.domain.coupon.service.CouponSyncService;
 import com.hanplane.global.exception.BusinessException;
 import com.hanplane.global.exception.ErrorCode;
 import com.hanplane.global.jwt.UserPrincipal;
@@ -15,15 +13,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,9 +28,6 @@ import java.util.List;
 public class CouponController {
 
     private final CouponService couponService;
-
-    @Autowired(required = false)
-    CouponSyncService couponSyncService;
 
     private final CouponInfoService couponInfoService;
 
@@ -49,7 +41,7 @@ public class CouponController {
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<Page<CouponListResponse>>> searchCoupon(@ModelAttribute CouponSearchCondition condition, Pageable pageable) {
-        Page<CouponListResponse> couponListResponsePage = couponInfoService.elasticsearchCoupon(condition, pageable);
+        Page<CouponListResponse> couponListResponsePage = couponInfoService.searchCoupon(condition, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(couponListResponsePage));
     }
@@ -90,14 +82,4 @@ public class CouponController {
         return ResponseEntity.ok(ApiResponse.success());
     }
 
-    @PostMapping("/sync")
-    public ResponseEntity<ApiResponse<Void>> syncElasticSearchCoupon() {
-        if(couponSyncService == null) {
-            throw new BusinessException(ErrorCode.ACTIVE_PROFILE_LOCAL);
-        }
-
-        couponSyncService.syncAll();
-
-        return ResponseEntity.ok(ApiResponse.success());
-    }
 }

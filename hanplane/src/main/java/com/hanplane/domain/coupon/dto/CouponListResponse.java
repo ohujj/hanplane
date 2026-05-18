@@ -1,6 +1,5 @@
 package com.hanplane.domain.coupon.dto;
 
-import com.hanplane.domain.coupon.CouponDocument;
 import com.hanplane.domain.coupon.entity.Coupon;
 import lombok.Builder;
 import lombok.Getter;
