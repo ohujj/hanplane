@@ -34,15 +34,4 @@ public class CouponListResponse {
                 .totalQuantity(coupon.getTotalQuantity())
                 .build();
     }
-
-    public static CouponListResponse from(CouponDocument couponDocument) {
-        return CouponListResponse.builder()
-                .couponId(couponDocument.getId())
-                .couponName(couponDocument.getName())
-                .discountRate(couponDocument.getDiscountRate())
-                .expiredAt(couponDocument.getExpiredAt())
-                .issuedQuantity(couponDocument.getIssuedQuantity())
-                .totalQuantity(couponDocument.getTotalQuantity())
-                .build();
-    }
 }
