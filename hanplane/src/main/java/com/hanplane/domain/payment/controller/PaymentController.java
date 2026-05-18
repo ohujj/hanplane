@@ -5,6 +5,7 @@ import com.hanplane.domain.payment.dto.RefundRequest;
 import com.hanplane.domain.payment.service.PaymentService;
 import com.hanplane.domain.payment.service.RefundService;
 import com.hanplane.global.jwt.UserPrincipal;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,14 +23,14 @@ public class PaymentController {
     private final RefundService refundService;
 
     @PostMapping("/confirm")
-    public ResponseEntity<Void> confirm(@RequestBody PaymentConfirmRequest request,
+    public ResponseEntity<Void> confirm(@RequestBody @Valid PaymentConfirmRequest request,
                                         @AuthenticationPrincipal UserPrincipal userPrincipal) {
         paymentService.confirm(userPrincipal.userId(), request);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/refund")
-    public ResponseEntity<Void> refund(@RequestBody RefundRequest request,
+    public ResponseEntity<Void> refund(@RequestBody @Valid RefundRequest request,
                                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
         refundService.refundProcess(userPrincipal.userId(), request);
         return ResponseEntity.ok().build();

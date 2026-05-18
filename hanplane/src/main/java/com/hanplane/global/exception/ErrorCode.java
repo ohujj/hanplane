@@ -51,6 +51,9 @@ public enum ErrorCode {
     PG_PAYMENT_NOT_PAID(400, 11002, "PG 결제가 실패하였습니다."),
     PAYMENT_AMOUNT_MISMATCH(400, 11003, "PG 결제 금액 위변조 감지"),
 
+    //12000 - refund
+    REFUND_NOT_FOUND(404, 12001, "환불이 존재하지 않습니다."),
+
     ;
 
     private final int status;
