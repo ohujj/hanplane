@@ -1,0 +1,29 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:hanplane-test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    defer-datasource-initialization: false
+
+  sql:
+    init:
+      mode: never
+
+jwt:
+  secret: test-secret-key-test-secret-key-test-secret-key-test-secret-key
+  expiration: 86400000
+  test-expiration: 5000
+  refresh-expiration: 604800000
+
+portone:
+  secret: test-portone-secret
+  store-id: test-store-id

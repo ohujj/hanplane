@@ -1,5 +1,6 @@
 package com.hanplane;
 
+import com.hanplane.domain.user.entity.Role;
 import com.hanplane.domain.user.repository.UserRepository;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.global.config.QueryDslConfig;
@@ -23,6 +24,8 @@ class UserRepositoryTest {
         User user = User.builder()
                 .email("test@test.com")
                 .password("1234")
+                .name("테스트")
+                .role(Role.USER)
                 .build();
 
         // when
@@ -31,5 +34,7 @@ class UserRepositoryTest {
         // then
         assertThat(savedUser.getId()).isNotNull();
         assertThat(savedUser.getEmail()).isEqualTo("test@test.com");
+        assertThat(savedUser.getName()).isEqualTo("테스트");
+        assertThat(savedUser.getRole()).isEqualTo(Role.USER);
     }
 }

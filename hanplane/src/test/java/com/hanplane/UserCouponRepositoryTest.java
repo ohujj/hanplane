@@ -5,6 +5,7 @@ import com.hanplane.domain.coupon.entity.CouponStatus;
 import com.hanplane.domain.coupon.entity.UserCoupon;
 import com.hanplane.domain.coupon.repository.CouponRepository;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
+import com.hanplane.domain.user.entity.Role;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.domain.user.repository.UserRepository;
 import com.hanplane.global.config.QueryDslConfig;
@@ -36,6 +37,8 @@ public class UserCouponRepositoryTest {
         User user = User.builder()
                 .email("test@mail.com")
                 .password("1234")
+                .name("테스트")
+                .role(Role.USER)
                 .build();
 
         User savedUser = userRepository.save(user);
