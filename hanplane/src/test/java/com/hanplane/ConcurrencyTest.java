@@ -4,6 +4,7 @@ import com.hanplane.domain.coupon.entity.Coupon;
 import com.hanplane.domain.coupon.repository.CouponRepository;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.domain.coupon.service.CouponService;
+import com.hanplane.domain.user.entity.Role;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.domain.user.repository.UserRepository;
 import org.assertj.core.api.Assertions;
@@ -44,6 +45,8 @@ public class ConcurrencyTest {
         for(int i=1; i<=100; i++) {
             User user = User.builder()
                     .email("user" + i + "@test.com")
+                    .name("user" + i)
+                    .role(Role.USER)
                     .password("testUser" + i)
                     .build();
             User savedUser = userRepository.save(user);

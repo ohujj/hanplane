@@ -20,6 +20,7 @@ import com.hanplane.domain.user.repository.UserRepository;
 import com.hanplane.global.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -237,5 +239,67 @@ class OrderServiceTest {
 
     }
 
+    @Test
+    void 주문시_OrderItem_price는_단가만_저장된다() {
+        Long userId = 1L;
+        User user = User.builder().email("test").password("1234").role(Role.ADMIN).name("test").build();
+        Product product = Product.builder()
+                .name("한정판").price(10000).totalQuantity(10).availQuantity(10)
+                .expiredAt(LocalDateTime.now().plusMonths(6)).build();
+        ReflectionTestUtils.setField(product, "id", 1L);
 
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+        given(userCouponRepository.findByUserIdCouponFetch(userId)).willReturn(List.of());
+        given(productRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.of(product));
+
+        OrderCreateRequest request = OrderCreateRequest.builder()
+                .orderItems(List.of(OrderItemRequest.builder().productId(1L).quantity(3).build()))
+                .build();
+
+        orderService.createOrder(request, userId);
+
+        ArgumentCaptor<List<OrderItem>> captor = ArgumentCaptor.forClass(List.class);
+        verify(orderItemRepository).saveAll(captor.capture());
+
+        OrderItem savedItem = captor.getValue().get(0);
+        assertThat(savedItem.getPrice()).isEqualTo(10000);  // 단가 (수량 곱하지 않음)
+        assertThat(savedItem.getQuantity()).isEqualTo(3);
+    }
+
+    @Test
+    void 쿠폰_20퍼센트_할인_주문_총액은_24000() {
+        Long userId = 1L;
+        User user = User.builder().email("test").password("1234").role(Role.ADMIN).name("test").build();
+        given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+        Coupon coupon = Coupon.builder()
+                .name("20%쿠폰").discountRate(20).totalQuantity(10)
+                .expiredAt(LocalDateTime.now().plusMonths(6)).build();
+        ReflectionTestUtils.setField(coupon, "id", 1L);
+
+        UserCoupon userCoupon = UserCoupon.builder()
+                .user(user).coupon(coupon).couponStatus(CouponStatus.UNUSED).build();
+        ReflectionTestUtils.setField(userCoupon, "id", 1L);
+
+        given(userCouponRepository.findByUserIdCouponFetch(userId)).willReturn(List.of(userCoupon));
+        given(couponRepository.findById(1L)).willReturn(Optional.of(coupon));
+
+        Product product = Product.builder()
+                .name("한정판").price(10000).totalQuantity(10).availQuantity(10)
+                .expiredAt(LocalDateTime.now().plusMonths(6)).build();
+        ReflectionTestUtils.setField(product, "id", 1L);
+        given(productRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.of(product));
+
+        OrderCreateRequest request = OrderCreateRequest.builder()
+                .orderItems(List.of(OrderItemRequest.builder().productId(1L).quantity(3).build()))
+                .couponId(1L)
+                .build();
+
+        orderService.createOrder(request, userId);
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(orderCaptor.capture());
+
+        assertThat(orderCaptor.getValue().getTotalPrice()).isEqualTo(24000);
+    }
 }

@@ -78,8 +78,8 @@ public class OrderService {
             totalPrice += productPrice;
         }
 
-        if(discountRate != 0) {
-            totalPrice -= (totalPrice / discountRate);
+        if(discountRate > 0) {
+            totalPrice -= totalPrice * discountRate / 100;
         }
 
         Order order = Order.builder()
@@ -98,9 +98,8 @@ public class OrderService {
             Product product = productMap.get(items.getProductId());
 
             //flow3 : 상품별 가격으로 order_item에 저장하기(저장 처리는 Order 생성 끝난 후)
-            int productPrice = product.getPrice() * items.getQuantity();
             OrderItem orderItem = OrderItem.builder()
-                    .price(productPrice)
+                    .price(product.getPrice())
                     .quantity(items.getQuantity())
                     .product(product)
                     .order(order)

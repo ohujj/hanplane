@@ -2,13 +2,16 @@ package com.hanplane;
 
 import com.hanplane.domain.user.repository.UserRepository;
 import com.hanplane.domain.user.entity.User;
+import com.hanplane.global.config.QueryDslConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@Import(QueryDslConfig.class)
 class UserRepositoryTest {
 
     @Autowired

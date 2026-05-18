@@ -47,6 +47,6 @@ public class RefundService {
         }
         //PG 환불 요청 끝
 
-        refundSaveService.refundAfterProcess(refund, refundRequest);
+        refundSaveService.refundAfterProcess(refund.getId(), refundRequest);
     }
 }

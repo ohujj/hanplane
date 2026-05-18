@@ -7,10 +7,12 @@ import com.hanplane.domain.coupon.repository.CouponRepository;
 import com.hanplane.domain.coupon.repository.UserCouponRepository;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.domain.user.repository.UserRepository;
+import com.hanplane.global.config.QueryDslConfig;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@Import(QueryDslConfig.class)  // ← 추가 (파일 확인 후)
 public class UserCouponRepositoryTest {
 
     @Autowired

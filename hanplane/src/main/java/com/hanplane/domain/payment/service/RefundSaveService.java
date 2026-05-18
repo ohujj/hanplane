@@ -89,25 +89,29 @@ public class RefundSaveService {
         return refundRepository.save(refund);
     }
 
+    // 변경 후
     @Transactional
-    public void refundAfterProcess(Refund refund, RefundRequest refundRequest) {
+    public void refundAfterProcess(Long refundId, RefundRequest refundRequest) {
+        // 새 트랜잭션에서 managed entity로 재조회
+        // 이유: refundSaveProcess() 트랜잭션 종료 후 Refund는 detached 상태 →
+        //       파라미터로 받으면 dirty checking 안 됨 → DB 미반영 버그
+        Refund refund = refundRepository.findByIdWithDetails(refundId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFUND_NOT_FOUND));
+
         refund.updateRefundStatus(RefundStatus.SUCCESS);
 
         Payment payment = refund.getPayment();
-
         List<Long> requestIds = refundRequest.getOrderItemIds();
         List<OrderItem> orderItems = payment.getOrder().getOrderItems();
 
-        // requestIds에 해당하는 OrderItem REFUNDED로 변경
         orderItems.stream()
                 .filter(item -> requestIds.contains(item.getId()))
                 .forEach(item -> item.updateStatus(OrderItemStatus.REFUNDED));
-        // 전체 환불인지 판단
 
         boolean isFullRefund = orderItems.stream()
                 .allMatch(item -> item.getStatus().equals(OrderItemStatus.REFUNDED));
 
-        Order order = refund.getPayment().getOrder();
+        Order order = payment.getOrder();
         order.updateOrderStatus(isFullRefund ? OrderStatus.REFUNDED : OrderStatus.PARTIAL_REFUNDED);
     }
 
