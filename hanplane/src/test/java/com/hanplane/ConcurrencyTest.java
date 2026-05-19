@@ -65,8 +65,7 @@ public class ConcurrencyTest {
             new Thread(() -> {
                 try {
                     startLatch.await();
-                    couponService.issueCoupon(userId, savedCoupon.getId());
-//                    couponService.issueCouponWithPessimisticLock(userId, savedCoupon.getId());
+                    couponService.issueCouponWithPessimisticLock(userId, savedCoupon.getId());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } finally {
@@ -81,7 +80,6 @@ public class ConcurrencyTest {
         endLatch.await();
 
         long end = System.currentTimeMillis();
-        System.out.println("Redis 분산락 사용 소요 시간: " + (end - start) + "ms");
 
         // then
         Coupon findCoupon = couponRepository.findById(savedCoupon.getId()).orElseThrow();

@@ -33,39 +33,17 @@ class CouponServiceTest {
     private CouponIssueService couponIssueService;
 
     @Test
-    void 쿠폰_발급_성공() throws InterruptedException {
-        // given
+    void 쿠폰_발급_성공() {
+        // given    
         Long userId = 1L;
         Long couponId = 1L;
-
-        when(redissonClient.getLock("coupon:lock:" + couponId)).thenReturn(rLock);
-        when(rLock.tryLock(30, 3, TimeUnit.SECONDS)).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
 
         // when
-        couponService.issueCoupon(userId, couponId);
+        couponService.issueCouponWithPessimisticLock(userId, couponId);
 
         // then
-        verify(couponIssueService).issue(userId, couponId);
-        verify(rLock).unlock();
+        verify(couponIssueService).issueWithPessimisticLock(userId, couponId);
     }
 
-    @Test
-    void 락_획득_실패시_예외발생() throws InterruptedException {
-        // given
-        Long userId = 1L;
-        Long couponId = 1L;
 
-        when(redissonClient.getLock("coupon:lock:" + couponId)).thenReturn(rLock);
-        when(rLock.tryLock(30, 3, TimeUnit.SECONDS)).thenReturn(false);
-        when(rLock.isHeldByCurrentThread()).thenReturn(false);
-
-        // when & then
-        assertThatThrownBy(() -> couponService.issueCoupon(userId, couponId))
-                .isInstanceOf(BusinessException.class)
-                .hasMessage(ErrorCode.LOCK_TRY_FAIL.getMessage());
-
-        verify(couponIssueService, never()).issue(anyLong(), anyLong());
-        verify(rLock, never()).unlock();
-    }
 }

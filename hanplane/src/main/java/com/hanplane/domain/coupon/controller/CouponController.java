@@ -34,7 +34,7 @@ public class CouponController {
     @PostMapping("/{couponId}/issue")
     @Operation(summary = "쿠폰 발급", description = "URI에 붙은 쿠폰아이디와 token 정보 유저를 통해 쿠폰 발급처리 합니다.")
     public ResponseEntity<ApiResponse<Void>> issueCoupon(@PathVariable("couponId") Long couponId, @AuthenticationPrincipal UserPrincipal userPrincipal) {
-        couponService.issueCoupon(userPrincipal.userId(), couponId);
+        couponService.issueCouponWithPessimisticLock(userPrincipal.userId(), couponId);
 
         return ResponseEntity.ok(ApiResponse.success());
     }
