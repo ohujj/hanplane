@@ -45,6 +45,11 @@ public class PaymentAfterService {
     public void payExceptionProcess(PaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderIdAndPayStatus(request.getOrderId(), PayStatus.PROCESSING).orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
         payment.updatePayStatus(PayStatus.FAIL);
+
+        // PG 호출 실패 시 Order를 PENDING으로 복구
+        // PROCESSING에 남으면 사용자가 다시 결제를 시도할 수 없음
+        Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        order.updateOrderStatus(OrderStatus.PENDING);
     }
 
     @Transactional
