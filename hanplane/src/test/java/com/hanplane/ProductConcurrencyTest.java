@@ -197,7 +197,8 @@ public class ProductConcurrencyTest {
 
         startLatch.countDown();
         // 비관적 락은 직렬 처리 → 0단계보다 소요 시간 증가, 충분한 타임아웃 확보
-        endLatch.await(60, TimeUnit.SECONDS);
+        boolean completed = endLatch.await(60, TimeUnit.SECONDS);
+        Assertions.assertThat(completed).as("100명 스레드가 60초 내 완료되지 않음 (타임아웃)").isTrue();
 
         long end = System.currentTimeMillis();
 
