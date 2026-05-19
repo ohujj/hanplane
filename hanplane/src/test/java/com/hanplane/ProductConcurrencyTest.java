@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @SpringBootTest
@@ -49,8 +50,7 @@ public class ProductConcurrencyTest {
 
     @Disabled("동시성 문제 재현용 테스트 - 비관적 락 적용 전에는 실패할 수 있음")
     @Test
-    void 동시에_100명이_재고_10개_상품_주문() throws InterruptedException {
-        // ===== given =====
+    void 동시에_100명이_재고_10개_상품_주문() throws InterruptedException {        // ===== given =====
         // 재고 10개짜리 한정판 상품
         Product product = Product.builder()
                 .name("한정판 상품")
@@ -133,4 +133,86 @@ public class ProductConcurrencyTest {
         Assertions.assertThat(result.getAvailQuantity()).isEqualTo(0);
         Assertions.assertThat(successCount.get()).isEqualTo(10);
     }
+
+    @Test
+    void 비관적락_100명_동시_주문_재고_10개_정합성_보장() throws InterruptedException {
+        // ===== given =====
+        Product product = Product.builder()
+                .name("한정판 상품 (비관적 락)")
+                .price(10000)
+                .totalQuantity(10)
+                .availQuantity(10)
+                .expiredAt(LocalDateTime.now().plusDays(30))
+                .build();
+        Product savedProduct = productRepository.save(product);
+
+        List<User> userList = new ArrayList<>();
+        for (int i = 1; i <= 100; i++) {
+            User user = User.builder()
+                    .email("lock_user" + i + "@test.com")
+                    .password("testUser" + i)
+                    .name("lockUser" + i)
+                    .role(Role.USER)
+                    .build();
+            userList.add(userRepository.save(user));
+        }
+
+        // ===== when =====
+        long start = System.currentTimeMillis();
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch endLatch = new CountDownLatch(100);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        for (User user : userList) {
+            Long userId = user.getId();
+
+            new Thread(() -> {
+                try {
+                    startLatch.await();
+
+                    OrderCreateRequest request = OrderCreateRequest.builder()
+                            .orderItems(List.of(
+                                    OrderItemRequest.builder()
+                                            .productId(savedProduct.getId())
+                                            .quantity(1)
+                                            .build()
+                            ))
+                            .build();
+
+                    orderService.createOrder(request, userId);
+                    successCount.incrementAndGet();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    failCount.incrementAndGet();
+                } finally {
+                    endLatch.countDown();
+                }
+            }).start();
+        }
+
+        startLatch.countDown();
+        // 비관적 락은 직렬 처리 → 0단계보다 소요 시간 증가, 충분한 타임아웃 확보
+        endLatch.await(60, TimeUnit.SECONDS);
+
+        long end = System.currentTimeMillis();
+
+        // ===== then =====
+        Product result = productRepository.findById(savedProduct.getId()).orElseThrow();
+
+        System.out.println("======================================");
+        System.out.println("[비관적 락] 소요 시간: " + (end - start) + "ms");
+        System.out.println("[비관적 락] 성공 카운트: " + successCount.get());
+        System.out.println("[비관적 락] 실패 카운트: " + failCount.get());
+        System.out.println("[비관적 락] 최종 재고: " + result.getAvailQuantity());
+        System.out.println("======================================");
+
+        // 비관적 락 적용 시 정확히 재고 수량만큼만 성공해야 함
+        Assertions.assertThat(successCount.get()).isEqualTo(10);
+        Assertions.assertThat(result.getAvailQuantity()).isEqualTo(0);
+    }
 }
+

@@ -141,7 +141,7 @@ class OrderServiceTest {
         OrderCreateRequest request = OrderCreateRequest.builder()
                 .orderItems(List.of(orderItemRequest)).couponId(null).build();
 
-        given(productRepository.findByIdAndDeletedAtIsNull(1L))
+        given(productRepository.findByIdAndDeletedAtIsNullWithLock(1L))
                 .willReturn(Optional.empty());
 
         assertThrows(BusinessException.class, () ->
@@ -196,7 +196,7 @@ class OrderServiceTest {
                 .builder()
                 .orderItems(list).couponId(couponId).build();
 
-        given(productRepository.findByIdAndDeletedAtIsNull(1L))
+        given(productRepository.findByIdAndDeletedAtIsNullWithLock(1L))
                 .willReturn(Optional.of(product));
 
         orderService.createOrder(orderCreateRequest, userId);
@@ -230,7 +230,7 @@ class OrderServiceTest {
                 .builder()
                 .orderItems(list).couponId(null).build();
 
-        given(productRepository.findByIdAndDeletedAtIsNull(1L))
+        given(productRepository.findByIdAndDeletedAtIsNullWithLock(1L))
                 .willReturn(Optional.of(product));
 
         orderService.createOrder(orderCreateRequest, userId);
@@ -250,7 +250,7 @@ class OrderServiceTest {
 
         given(userRepository.findById(userId)).willReturn(Optional.of(user));
         given(userCouponRepository.findByUserIdCouponFetch(userId)).willReturn(List.of());
-        given(productRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.of(product));
+        given(productRepository.findByIdAndDeletedAtIsNullWithLock(1L)).willReturn(Optional.of(product));
 
         OrderCreateRequest request = OrderCreateRequest.builder()
                 .orderItems(List.of(OrderItemRequest.builder().productId(1L).quantity(3).build()))
@@ -288,7 +288,7 @@ class OrderServiceTest {
                 .name("한정판").price(10000).totalQuantity(10).availQuantity(10)
                 .expiredAt(LocalDateTime.now().plusMonths(6)).build();
         ReflectionTestUtils.setField(product, "id", 1L);
-        given(productRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.of(product));
+        given(productRepository.findByIdAndDeletedAtIsNullWithLock(1L)).willReturn(Optional.of(product));
 
         OrderCreateRequest request = OrderCreateRequest.builder()
                 .orderItems(List.of(OrderItemRequest.builder().productId(1L).quantity(3).build()))

@@ -69,7 +69,7 @@ public class OrderService {
 
         for(OrderItemRequest request : orderItems) {
 
-            Product product = productRepository.findByIdAndDeletedAtIsNull(request.getProductId()).orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+            Product product = productRepository.findByIdAndDeletedAtIsNullWithLock(request.getProductId()).orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
             productMap.put(product.getId(), product);
 
             product.decrease(request.getQuantity());
