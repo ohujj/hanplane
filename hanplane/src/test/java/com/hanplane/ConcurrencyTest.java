@@ -65,7 +65,7 @@ public class ConcurrencyTest {
             new Thread(() -> {
                 try {
                     startLatch.await();
-                    couponService.issueCouponWithPessimisticLock(userId, savedCoupon.getId());
+                    couponService.issueCoupon(userId, savedCoupon.getId());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 } finally {
