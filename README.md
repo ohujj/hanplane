@@ -55,9 +55,9 @@ hanplane은 한정판 커머스 도메인을 통해 백엔드에서 자주 발�
 | Payment   | PortOne Server SDK              |
 | Test      | JUnit 5, Spring Boot Test       |
 | Infra     | AWS EC2, Docker, GitHub Actions |
+| API Docs  | Springdoc OpenAPI / Swagger UI  |
 
 > EC2 배포는 GitHub Actions 기반 `deploy.yml`로 구성해 성공적으로 검증했습니다. 현재는 비용 관리를 위해 EC2 인스턴스를 중지한 상태입니다.
-> | API Docs | Springdoc OpenAPI / Swagger UI |
 
 ---
 
