@@ -37,7 +37,6 @@ public class AuthService {
             throw new BusinessException(ErrorCode.JWT_TOKEN_VALIDATE_FAIL);
         }
 
-
         User user = token.getUser();
 
         LocalDateTime now = LocalDateTime.now();
