@@ -18,7 +18,4 @@ public class PaymentConfirmRequest {
 
     @NotBlank(message = "paymentId는 필수입니다.")
     private final String paymentId;
-
-    @NotBlank(message = "txId는 필수입니다.")
-    private final String txId;
 }
