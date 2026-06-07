@@ -12,6 +12,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     Optional<Payment> findByOrderIdAndPayStatus(Long orderId, PayStatus payStatus);
 
+    Optional<Payment> findByOrder_IdAndIdempotencyKey(Long orderId, String idempotencyKey);
+
     @Query("select p from Payment p join fetch p.order o join fetch o.orderItems where p.id = :paymentId")
     Optional<Payment> findByIdWithOrderAndItems(@Param("paymentId") Long paymentId);
 }
