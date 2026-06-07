@@ -2,7 +2,6 @@ package com.hanplane.domain.payment.service;
 
 import com.hanplane.domain.order.repository.OrderRepository;
 import com.hanplane.domain.payment.dto.PaymentConfirmRequest;
-import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;
 import io.portone.sdk.server.PortOneClient;
 import org.junit.jupiter.api.BeforeEach;

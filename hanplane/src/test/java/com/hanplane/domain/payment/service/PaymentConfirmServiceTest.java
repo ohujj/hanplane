@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -54,7 +53,8 @@ class PaymentConfirmServiceTest {
         order = mock(Order.class);
         when(order.getId()).thenReturn(orderId);
         when(order.getUser()).thenReturn(user);
-        when(order.getTotalPrice()).thenReturn(10000);
+        // getTotalPrice()는 createNewPayment() 내부에서만 호출되므로
+        // 해당 경로가 실행되는 테스트에서만 스텁 정의
 
         request = PaymentConfirmRequest.builder()
                 .orderId(orderId)
@@ -94,6 +94,7 @@ class PaymentConfirmServiceTest {
     void 새_Payment_idempotencyKey_헤더값으로_저장() {
         // given
         when(order.getOrderStatus()).thenReturn(OrderStatus.PENDING);
+        when(order.getTotalPrice()).thenReturn(10000);  // createNewPayment() 경로에서만 필요
         when(paymentRepository.findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey))
                 .thenReturn(Optional.empty());
 
