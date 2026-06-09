@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -51,22 +52,17 @@ class PaymentConfirmServiceTest {
         when(user.getId()).thenReturn(userId);
 
         order = mock(Order.class);
-        when(order.getId()).thenReturn(orderId);
         when(order.getUser()).thenReturn(user);
-        // getTotalPrice()는 createNewPayment() 내부에서만 호출되므로
-        // 해당 경로가 실행되는 테스트에서만 스텁 정의
 
         request = PaymentConfirmRequest.builder()
                 .orderId(orderId)
                 .paymentId("portone-payment-id-001")
                 .build();
-
-        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
     }
 
     @Test
-    @DisplayName("같은 orderId + idempotencyKey로 호출 시 기존 Payment를 반환하고 새로 저장하지 않는다")
-    void 중복_요청_시_기존_Payment_반환_저장_안함() {
+    @DisplayName("same orderId and idempotencyKey returns existing Payment without locking or saving")
+    void duplicateRequestReturnsExistingPaymentWithoutLocking() {
         // given
         Payment existingPayment = Payment.builder()
                 .idempotencyKey(idempotencyKey)
@@ -85,20 +81,20 @@ class PaymentConfirmServiceTest {
         assertThat(result.newlyCreated()).isFalse();
         assertThat(result.payment()).isSameAs(existingPayment);
 
-        // saveAndFlush는 호출되면 안 됨
+        verify(orderRepository, never()).findWithPessimisticLockById(any());
         verify(paymentRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    @DisplayName("새 요청(기존 Payment 없음, PENDING 주문)이면 idempotencyKey를 헤더값으로 저장한다")
-    void 새_Payment_idempotencyKey_헤더값으로_저장() {
+    @DisplayName("new Payment is created only after acquiring an Order pessimistic write lock")
+    void newPaymentIsCreatedAfterOrderLock() {
         // given
+        when(orderRepository.findWithPessimisticLockById(orderId)).thenReturn(Optional.of(order));
         when(order.getOrderStatus()).thenReturn(OrderStatus.PENDING);
-        when(order.getTotalPrice()).thenReturn(10000);  // createNewPayment() 경로에서만 필요
+        when(order.getTotalPrice()).thenReturn(10000);
         when(paymentRepository.findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey))
-                .thenReturn(Optional.empty());
+                .thenReturn(Optional.empty(), Optional.empty());
 
-        // saveAndFlush가 받은 Payment 인스턴스를 그대로 반환
         when(paymentRepository.saveAndFlush(any(Payment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -110,14 +106,77 @@ class PaymentConfirmServiceTest {
         assertThat(result.payment().getIdempotencyKey()).isEqualTo(idempotencyKey);
         assertThat(result.payment().getPayStatus()).isEqualTo(PayStatus.PROCESSING);
 
-        verify(paymentRepository, times(1)).saveAndFlush(any(Payment.class));
+        InOrder inOrder = inOrder(orderRepository, paymentRepository);
+        inOrder.verify(paymentRepository).findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey);
+        inOrder.verify(orderRepository).findWithPessimisticLockById(orderId);
+        inOrder.verify(paymentRepository).findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey);
+
+        verify(orderRepository).findWithPessimisticLockById(orderId);
+        verify(paymentRepository, times(2)).findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey);
+        verify(order).updateOrderStatus(OrderStatus.PROCESSING);
+        verify(paymentRepository).saveAndFlush(any(Payment.class));
     }
 
     @Test
-    @DisplayName("기존 Payment 없는 상태에서 주문이 PROCESSING이면 ORDER_STATUS_IS_NOT_PENDING 예외를 던진다")
-    void 기존Payment없음_PROCESSING주문_예외발생() {
+    @DisplayName("existing Payment found after lock is returned without creating another Payment")
+    void existingPaymentAfterLockReturnsWithoutSaving() {
         // given
-        when(order.getOrderStatus()).thenReturn(OrderStatus.PROCESSING);
+        Payment existingPayment = Payment.builder()
+                .idempotencyKey(idempotencyKey)
+                .payStatus(PayStatus.PROCESSING)
+                .amount(10000)
+                .order(order)
+                .build();
+
+        when(orderRepository.findWithPessimisticLockById(orderId)).thenReturn(Optional.of(order));
+        when(paymentRepository.findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey))
+                .thenReturn(Optional.empty(), Optional.of(existingPayment));
+
+        // when
+        PaymentConfirmResult result = paymentConfirmService.confirmOrder(userId, request, idempotencyKey);
+
+        // then
+        assertThat(result.newlyCreated()).isFalse();
+        assertThat(result.payment()).isSameAs(existingPayment);
+
+        verify(orderRepository).findWithPessimisticLockById(orderId);
+        verify(paymentRepository, times(2)).findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey);
+        verify(paymentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("existing Payment owned by another user throws INVALID_REQUEST_PARAMETER")
+    void existingPaymentOwnedByAnotherUserThrows() {
+        // given
+        Long anotherUserId = 999L;
+        Payment existingPayment = Payment.builder()
+                .idempotencyKey(idempotencyKey)
+                .payStatus(PayStatus.PROCESSING)
+                .amount(10000)
+                .order(order)
+                .build();
+
+        when(user.getId()).thenReturn(anotherUserId);
+        when(paymentRepository.findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey))
+                .thenReturn(Optional.of(existingPayment));
+
+        // when & then
+        assertThatThrownBy(() -> paymentConfirmService.confirmOrder(userId, request, idempotencyKey))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_REQUEST_PARAMETER);
+
+        verify(orderRepository, never()).findWithPessimisticLockById(any());
+        verify(paymentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("locked Order owned by another user throws INVALID_REQUEST_PARAMETER")
+    void lockedOrderOwnedByAnotherUserThrows() {
+        // given
+        Long anotherUserId = 999L;
+        when(user.getId()).thenReturn(anotherUserId);
+        when(orderRepository.findWithPessimisticLockById(orderId)).thenReturn(Optional.of(order));
         when(paymentRepository.findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey))
                 .thenReturn(Optional.empty());
 
@@ -125,8 +184,29 @@ class PaymentConfirmServiceTest {
         assertThatThrownBy(() -> paymentConfirmService.confirmOrder(userId, request, idempotencyKey))
                 .isInstanceOf(BusinessException.class)
                 .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_REQUEST_PARAMETER);
+
+        verify(orderRepository).findWithPessimisticLockById(orderId);
+        verify(paymentRepository).findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey);
+        verify(paymentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("non-PENDING Order without existing Payment throws ORDER_STATUS_IS_NOT_PENDING")
+    void nonPendingOrderWithoutExistingPaymentThrows() {
+        // given
+        when(orderRepository.findWithPessimisticLockById(orderId)).thenReturn(Optional.of(order));
+        when(order.getOrderStatus()).thenReturn(OrderStatus.PROCESSING);
+        when(paymentRepository.findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey))
+                .thenReturn(Optional.empty(), Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> paymentConfirmService.confirmOrder(userId, request, idempotencyKey))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ORDER_STATUS_IS_NOT_PENDING);
 
+        verify(orderRepository).findWithPessimisticLockById(orderId);
         verify(paymentRepository, never()).saveAndFlush(any());
     }
 }
