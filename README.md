@@ -17,7 +17,7 @@
 
 hanplane은 한정판 커머스 도메인을 통해 백엔드에서 자주 발생하는 **데이터 정합성, 동시성, 외부 PG 연동 예외 상황**을 직접 구현하고 검증하기 위한 프로젝트입니다.
 
-주요 학습 및 구현 목표는 다음과 같습니다.
+주요 구현 목표는 다음과 같습니다.
 
 1. 재고 차감 동시성 문제 재현 및 DB 비관적 락 적용
 2. PortOne PG 연동 기반 결제 승인/실패/환불 흐름 구현
@@ -54,9 +54,9 @@ hanplane은 한정판 커머스 도메인을 통해 백엔드에서 자주 발�
 
 ERD는 dbdiagram.io를 사용해 작성했습니다.
 
-- ERD: https://dbdiagram.io/d/6a2976615c789b8acb552076
+* ERD: https://dbdiagram.io/d/6a2976615c789b8acb552076
 
-결제 confirm 멱등 처리를 위해 `payment(order_id, idempotency_key)` unique constraint를 적용했습니다.  
+결제 confirm 멱등 처리를 위해 `payment(order_id, idempotency_key)` unique constraint를 적용했습니다.
 동일 주문에 대한 Payment 생성 흐름은 Order row lock으로 직렬화하고, 같은 주문/같은 멱등키 조합의 중복 Payment insert는 DB 제약으로 한 번 더 방어했습니다.
 
 ---
