@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
@@ -13,6 +14,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderIdAndPayStatus(Long orderId, PayStatus payStatus);
 
     Optional<Payment> findByOrder_IdAndIdempotencyKey(Long orderId, String idempotencyKey);
+
+    List<Payment> findTop100ByPayStatusOrderByIdAsc(PayStatus payStatus);
 
     @Query("select p from Payment p join fetch p.order o join fetch o.orderItems where p.id = :paymentId")
     Optional<Payment> findByIdWithOrderAndItems(@Param("paymentId") Long paymentId);

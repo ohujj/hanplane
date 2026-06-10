@@ -53,6 +53,24 @@ public class PaymentAfterService {
     }
 
     @Transactional
+    public void verifyRequiredProcess(PaymentConfirmRequest request) {
+        Payment payment = paymentRepository.findByOrderIdAndPayStatus(request.getOrderId(), PayStatus.PROCESSING).orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+        payment.updateVerifyRequired(request.getPaymentId());
+
+        Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        order.updateOrderStatus(OrderStatus.PROCESSING);
+    }
+
+    @Transactional
+    public void cancelRequiredProcess(PaymentConfirmRequest request) {
+        Payment payment = paymentRepository.findByOrderIdAndPayStatus(request.getOrderId(), PayStatus.PROCESSING).orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
+        payment.updateCancelRequired(request.getPaymentId());
+
+        Order order = orderRepository.findById(request.getOrderId()).orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        order.updateOrderStatus(OrderStatus.ILLEGAL);
+    }
+
+    @Transactional
     public void illegalRequestProcess(PaymentConfirmRequest request) {
         Payment payment = paymentRepository.findByOrderIdAndPayStatus(request.getOrderId(), PayStatus.PROCESSING).orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
         payment.updatePayStatus(PayStatus.ILLEGAL);

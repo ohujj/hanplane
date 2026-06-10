@@ -13,7 +13,15 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "payment")
+@Table(
+        name = "payment",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_payment_order_id_idempotency_key",
+                        columnNames = {"order_id", "idempotency_key"}
+                )
+        }
+)
 public class Payment extends BaseEntity {
 
     @Id
@@ -69,8 +77,28 @@ public class Payment extends BaseEntity {
         this.payStatus = PayStatus.SUCCESS;
     }
 
+    public void updateAfterPay(String transactionId, String payMethod, LocalDateTime paidAt) {
+        this.transactionId = transactionId;
+        this.payMethod = payMethod;
+        this.paidAt = paidAt;
+        this.payStatus = PayStatus.SUCCESS;
+        update();
+    }
+
     public void updatePayStatus(PayStatus payStatus) {
         this.payStatus = payStatus;
+        update();
+    }
+
+    public void updateVerifyRequired(String pgPaymentId) {
+        this.pgPaymentId = pgPaymentId;
+        this.payStatus = PayStatus.VERIFY_REQUIRED;
+        update();
+    }
+
+    public void updateCancelRequired(String pgPaymentId) {
+        this.pgPaymentId = pgPaymentId;
+        this.payStatus = PayStatus.CANCEL_REQUIRED;
         update();
     }
 

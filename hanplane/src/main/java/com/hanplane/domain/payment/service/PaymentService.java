@@ -54,7 +54,7 @@ public class PaymentService {
             long pgAmount = paidPayment.getAmount().getTotal();
             if (pgAmount != payment.getAmount()) {
                 // 조작된 사용자라 판단하여 pg 취소 혹은 후처리 로직 메서드
-                paymentAfterService.illegalRequestProcess(request);
+                cancelMismatchedPayment(request, pgAmount);
                 throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
             }
 
@@ -64,9 +64,30 @@ public class PaymentService {
             }
             throw e;
         } catch (Exception e) {
-            paymentAfterService.payExceptionProcess(request);
+            paymentAfterService.verifyRequiredProcess(request);
             throw new BusinessException(ErrorCode.PG_CALL_FAILED);
         }
         paymentAfterService.payAfterProcess(request, paidPayment);
+    }
+
+    private void cancelMismatchedPayment(PaymentConfirmRequest request, long pgAmount) {
+        try {
+            portOneClient.getPayment().cancelPayment(
+                    request.getPaymentId(),
+                    pgAmount,
+                    null,
+                    null,
+                    "금액 불일치로 인한 자동 취소",
+                    null,
+                    null,
+                    null,
+                    null
+            ).get();
+        } catch (Exception e) {
+            paymentAfterService.cancelRequiredProcess(request);
+            return;
+        }
+
+        paymentAfterService.illegalRequestProcess(request);
     }
 }

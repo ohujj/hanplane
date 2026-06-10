@@ -66,4 +66,80 @@ class PaymentAfterServiceTest {
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.FAIL);
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
     }
+
+    @Test
+    void PG_조회_결과_불확실_시_Payment는_VERIFY_REQUIRED_Order는_PROCESSING_유지() {
+        // given
+        Long orderId = 1L;
+        String pgPaymentId = "portone-payment-id-001";
+
+        Payment payment = Payment.builder()
+                .idempotencyKey("test-key")
+                .amount(30000)
+                .payStatus(PayStatus.PROCESSING)
+                .build();
+        ReflectionTestUtils.setField(payment, "id", 1L);
+
+        Order order = Order.builder()
+                .totalPrice(30000)
+                .orderStatus(OrderStatus.PROCESSING)
+                .build();
+        ReflectionTestUtils.setField(order, "id", orderId);
+
+        given(paymentRepository.findByOrderIdAndPayStatus(orderId, PayStatus.PROCESSING))
+                .willReturn(Optional.of(payment));
+        given(orderRepository.findById(orderId))
+                .willReturn(Optional.of(order));
+
+        PaymentConfirmRequest request = PaymentConfirmRequest.builder()
+                .orderId(orderId)
+                .paymentId(pgPaymentId)
+                .build();
+
+        // when
+        paymentAfterService.verifyRequiredProcess(request);
+
+        // then
+        assertThat(payment.getPayStatus()).isEqualTo(PayStatus.VERIFY_REQUIRED);
+        assertThat(payment.getPgPaymentId()).isEqualTo(pgPaymentId);
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
+    }
+
+    @Test
+    void 금액_불일치_취소_실패_시_Payment는_CANCEL_REQUIRED_Order는_ILLEGAL() {
+        // given
+        Long orderId = 1L;
+        String pgPaymentId = "portone-payment-id-001";
+
+        Payment payment = Payment.builder()
+                .idempotencyKey("test-key")
+                .amount(30000)
+                .payStatus(PayStatus.PROCESSING)
+                .build();
+        ReflectionTestUtils.setField(payment, "id", 1L);
+
+        Order order = Order.builder()
+                .totalPrice(30000)
+                .orderStatus(OrderStatus.PROCESSING)
+                .build();
+        ReflectionTestUtils.setField(order, "id", orderId);
+
+        given(paymentRepository.findByOrderIdAndPayStatus(orderId, PayStatus.PROCESSING))
+                .willReturn(Optional.of(payment));
+        given(orderRepository.findById(orderId))
+                .willReturn(Optional.of(order));
+
+        PaymentConfirmRequest request = PaymentConfirmRequest.builder()
+                .orderId(orderId)
+                .paymentId(pgPaymentId)
+                .build();
+
+        // when
+        paymentAfterService.cancelRequiredProcess(request);
+
+        // then
+        assertThat(payment.getPayStatus()).isEqualTo(PayStatus.CANCEL_REQUIRED);
+        assertThat(payment.getPgPaymentId()).isEqualTo(pgPaymentId);
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.ILLEGAL);
+    }
 }

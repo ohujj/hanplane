@@ -3,15 +3,24 @@ package com.hanplane.domain.payment.service;
 import com.hanplane.domain.order.repository.OrderRepository;
 import com.hanplane.domain.payment.dto.PaymentConfirmRequest;
 import com.hanplane.domain.payment.entity.Payment;
+import com.hanplane.global.exception.BusinessException;
+import com.hanplane.global.exception.ErrorCode;
 import io.portone.sdk.server.PortOneClient;
+import io.portone.sdk.server.payment.CancelPaymentResponse;
+import io.portone.sdk.server.payment.PaidPayment;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.CompletableFuture;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,7 +35,7 @@ class PaymentServiceConfirmTest {
     @Mock
     private PaymentConfirmService paymentConfirmService;
 
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private PortOneClient portOneClient;
 
     @Mock
@@ -62,5 +71,107 @@ class PaymentServiceConfirmTest {
         // portOneClient가 전혀 호출되지 않으면 payProcess()가 스킵된 것
         verifyNoInteractions(portOneClient);
         verifyNoInteractions(paymentAfterService);
+    }
+
+    @Test
+    @DisplayName("PG lookup failure marks Payment as VERIFY_REQUIRED")
+    void pgLookupFailureMarksPaymentAsVerifyRequired() throws Exception {
+        // given
+        Payment newPayment = mock(Payment.class);
+        PaymentConfirmResult newResult = new PaymentConfirmResult(newPayment, true);
+
+        when(paymentConfirmService.confirmOrder(userId, request, idempotencyKey))
+                .thenReturn(newResult);
+        when(portOneClient.getPayment().getPayment(request.getPaymentId()).get())
+                .thenThrow(new RuntimeException("pg timeout"));
+
+        // when
+        BusinessException exception = Assertions.assertThrows(
+                BusinessException.class,
+                () -> paymentService.confirm(userId, request, idempotencyKey)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PG_CALL_FAILED);
+        verify(paymentAfterService).verifyRequiredProcess(request);
+        verify(paymentAfterService, never()).payExceptionProcess(request);
+        verify(paymentAfterService, never()).payAfterProcess(any(), any());
+    }
+
+    @Test
+    @DisplayName("amount mismatch cancels PG payment and marks request as illegal when cancel succeeds")
+    void amountMismatchCancelSuccessMarksIllegal() throws Exception {
+        // given
+        Payment newPayment = mock(Payment.class);
+        PaidPayment paidPayment = mock(PaidPayment.class, Answers.RETURNS_DEEP_STUBS);
+        CancelPaymentResponse cancelResponse = mock(CancelPaymentResponse.class);
+
+        when(newPayment.getAmount()).thenReturn(10000);
+        when(paidPayment.getAmount().getTotal()).thenReturn(20000L);
+        when(paymentConfirmService.confirmOrder(userId, request, idempotencyKey))
+                .thenReturn(new PaymentConfirmResult(newPayment, true));
+        when(portOneClient.getPayment().getPayment(request.getPaymentId()).get())
+                .thenReturn(paidPayment);
+        when(portOneClient.getPayment().cancelPayment(
+                eq(request.getPaymentId()),
+                eq(20000L),
+                isNull(),
+                isNull(),
+                eq("금액 불일치로 인한 자동 취소"),
+                isNull(),
+                isNull(),
+                isNull(),
+                isNull()
+        )).thenReturn(CompletableFuture.completedFuture(cancelResponse));
+
+        // when
+        BusinessException exception = Assertions.assertThrows(
+                BusinessException.class,
+                () -> paymentService.confirm(userId, request, idempotencyKey)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+        verify(paymentAfterService).illegalRequestProcess(request);
+        verify(paymentAfterService, never()).cancelRequiredProcess(request);
+        verify(paymentAfterService, never()).payAfterProcess(any(), any());
+    }
+
+    @Test
+    @DisplayName("amount mismatch marks Payment as CANCEL_REQUIRED when PG cancel fails")
+    void amountMismatchCancelFailureMarksCancelRequired() throws Exception {
+        // given
+        Payment newPayment = mock(Payment.class);
+        PaidPayment paidPayment = mock(PaidPayment.class, Answers.RETURNS_DEEP_STUBS);
+
+        when(newPayment.getAmount()).thenReturn(10000);
+        when(paidPayment.getAmount().getTotal()).thenReturn(20000L);
+        when(paymentConfirmService.confirmOrder(userId, request, idempotencyKey))
+                .thenReturn(new PaymentConfirmResult(newPayment, true));
+        when(portOneClient.getPayment().getPayment(request.getPaymentId()).get())
+                .thenReturn(paidPayment);
+        when(portOneClient.getPayment().cancelPayment(
+                eq(request.getPaymentId()),
+                eq(20000L),
+                isNull(),
+                isNull(),
+                eq("금액 불일치로 인한 자동 취소"),
+                isNull(),
+                isNull(),
+                isNull(),
+                isNull()
+        )).thenReturn(CompletableFuture.failedFuture(new RuntimeException("cancel failed")));
+
+        // when
+        BusinessException exception = Assertions.assertThrows(
+                BusinessException.class,
+                () -> paymentService.confirm(userId, request, idempotencyKey)
+        );
+
+        // then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
+        verify(paymentAfterService).cancelRequiredProcess(request);
+        verify(paymentAfterService, never()).illegalRequestProcess(request);
+        verify(paymentAfterService, never()).payAfterProcess(any(), any());
     }
 }
