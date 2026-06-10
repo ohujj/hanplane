@@ -50,6 +50,17 @@ hanplane은 한정판 커머스 도메인을 통해 백엔드에서 자주 발�
 
 ---
 
+## ERD
+
+ERD는 dbdiagram.io를 사용해 작성했습니다.
+
+- ERD: https://dbdiagram.io/d/6a2976615c789b8acb552076
+
+결제 confirm 멱등 처리를 위해 `payment(order_id, idempotency_key)` unique constraint를 적용했습니다.  
+동일 주문에 대한 Payment 생성 흐름은 Order row lock으로 직렬화하고, 같은 주문/같은 멱등키 조합의 중복 Payment insert는 DB 제약으로 한 번 더 방어했습니다.
+
+---
+
 ## 핵심 문제와 해결 방식
 
 | 문제                     | 해결 방식                                                     | 검증                                           |
