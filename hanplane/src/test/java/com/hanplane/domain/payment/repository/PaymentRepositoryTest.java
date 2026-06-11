@@ -14,8 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
@@ -57,10 +63,56 @@ class PaymentRepositoryTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    @DisplayName("compensation targets exclude recent, max retry, manual review, and other status payments")
+    void findCompensationTargetsFiltersEligiblePayments() {
+        // given
+        User user = userRepository.save(User.builder()
+                .email("compensation-test@test.com")
+                .password("1234")
+                .name("compensation-test")
+                .role(Role.USER)
+                .build());
+
+        Order order = orderRepository.save(Order.builder()
+                .user(user)
+                .totalPrice(10000)
+                .orderStatus(OrderStatus.PROCESSING)
+                .build());
+
+        Payment eligible = createPayment(order, "eligible", PayStatus.VERIFY_REQUIRED);
+        Payment recent = createPayment(order, "recent", PayStatus.VERIFY_REQUIRED);
+        Payment maxRetried = createPayment(order, "max-retried", PayStatus.VERIFY_REQUIRED);
+        Payment manualReview = createPayment(order, "manual-review", PayStatus.VERIFY_REQUIRED);
+        Payment otherStatus = createPayment(order, "other-status", PayStatus.CANCEL_REQUIRED);
+
+        ReflectionTestUtils.setField(recent, "lastCompensationTriedAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(maxRetried, "compensationRetryCount", 3);
+        ReflectionTestUtils.setField(manualReview, "manualReviewRequired", true);
+
+        paymentRepository.saveAllAndFlush(List.of(eligible, recent, maxRetried, manualReview, otherStatus));
+
+        // when
+        List<Payment> result = paymentRepository.findCompensationTargets(
+                PayStatus.VERIFY_REQUIRED,
+                3,
+                LocalDateTime.now().minusMinutes(5),
+                PageRequest.of(0, 100)
+        );
+
+        // then
+        assertThat(result).containsExactly(eligible);
+    }
+
     private Payment createPayment(Order order, String idempotencyKey) {
+        return createPayment(order, idempotencyKey, PayStatus.PROCESSING);
+    }
+
+    private Payment createPayment(Order order, String idempotencyKey, PayStatus payStatus) {
         return Payment.builder()
                 .idempotencyKey(idempotencyKey)
-                .payStatus(PayStatus.PROCESSING)
+                .pgPaymentId("pg-" + idempotencyKey)
+                .payStatus(payStatus)
                 .amount(order.getTotalPrice())
                 .order(order)
                 .build();

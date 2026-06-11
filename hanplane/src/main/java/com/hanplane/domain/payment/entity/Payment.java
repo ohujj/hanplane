@@ -50,6 +50,18 @@ public class Payment extends BaseEntity {
     @Column(nullable = false)
     private int amount;
 
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int compensationRetryCount;
+
+    @Column(length = 500)
+    private String lastCompensationFailureReason;
+
+    @Column
+    private LocalDateTime lastCompensationTriedAt;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean manualReviewRequired;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
@@ -100,6 +112,28 @@ public class Payment extends BaseEntity {
         this.pgPaymentId = pgPaymentId;
         this.payStatus = PayStatus.CANCEL_REQUIRED;
         update();
+    }
+
+    public void recordCompensationSuccess() {
+        this.lastCompensationTriedAt = LocalDateTime.now();
+        update();
+    }
+
+    public void recordCompensationFailure(String failureReason, int maxRetryCount) {
+        this.compensationRetryCount++;
+        this.lastCompensationFailureReason = sanitizeFailureReason(failureReason);
+        this.lastCompensationTriedAt = LocalDateTime.now();
+        if (this.compensationRetryCount >= maxRetryCount) {
+            this.manualReviewRequired = true;
+        }
+        update();
+    }
+
+    private String sanitizeFailureReason(String failureReason) {
+        if (failureReason == null || failureReason.isBlank()) {
+            return "Unknown compensation failure";
+        }
+        return failureReason.length() > 500 ? failureReason.substring(0, 500) : failureReason;
     }
 
 }

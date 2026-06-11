@@ -8,8 +8,10 @@ import com.hanplane.domain.payment.repository.PaymentRepository;
 import io.portone.sdk.server.PortOneClient;
 import io.portone.sdk.server.payment.CancelPaymentResponse;
 import io.portone.sdk.server.payment.PaidPayment;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Pageable;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -35,14 +38,20 @@ class PaymentCompensationServiceTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private PortOneClient portOneClient;
 
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(paymentCompensationService, "batchSize", 100);
+        ReflectionTestUtils.setField(paymentCompensationService, "maxRetryCount", 3);
+        ReflectionTestUtils.setField(paymentCompensationService, "retryIntervalMinutes", 5L);
+    }
+
     @Test
     void cancelRequiredPaymentCancelSuccessMarksIllegal() {
         // given
         Payment payment = payment(1L, "portone-payment-id-001", PayStatus.CANCEL_REQUIRED, 10000, order(OrderStatus.ILLEGAL));
         CancelPaymentResponse response = mock(CancelPaymentResponse.class);
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.CANCEL_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.CANCEL_REQUIRED, payment);
         mockCancelSuccess("portone-payment-id-001", "Amount mismatch cancel retry", response);
 
         // when
@@ -50,6 +59,7 @@ class PaymentCompensationServiceTest {
 
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.ILLEGAL);
+        assertThat(payment.getLastCompensationTriedAt()).isNotNull();
     }
 
     @Test
@@ -57,8 +67,7 @@ class PaymentCompensationServiceTest {
         // given
         Payment payment = payment(1L, "portone-payment-id-001", PayStatus.CANCEL_REQUIRED, 10000, order(OrderStatus.ILLEGAL));
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.CANCEL_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.CANCEL_REQUIRED, payment);
         mockCancelFailure("portone-payment-id-001", "Amount mismatch cancel retry");
 
         // when
@@ -66,6 +75,10 @@ class PaymentCompensationServiceTest {
 
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.CANCEL_REQUIRED);
+        assertThat(payment.getCompensationRetryCount()).isEqualTo(1);
+        assertThat(payment.getLastCompensationFailureReason()).contains("RuntimeException");
+        assertThat(payment.getLastCompensationTriedAt()).isNotNull();
+        assertThat(payment.isManualReviewRequired()).isFalse();
     }
 
     @Test
@@ -75,8 +88,7 @@ class PaymentCompensationServiceTest {
         Payment payment = payment(1L, "portone-payment-id-001", PayStatus.VERIFY_REQUIRED, 10000, order);
         PaidPayment paidPayment = paidPayment(10000L);
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.VERIFY_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.VERIFY_REQUIRED, payment);
         when(portOneClient.getPayment().getPayment("portone-payment-id-001").get())
                 .thenReturn(paidPayment);
 
@@ -87,6 +99,7 @@ class PaymentCompensationServiceTest {
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.SUCCESS);
         assertThat(payment.getTransactionId()).isEqualTo("tx-001");
         assertThat(payment.getPayMethod()).isEqualTo("UNKNOWN");
+        assertThat(payment.getLastCompensationTriedAt()).isNotNull();
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PAID);
     }
 
@@ -97,8 +110,7 @@ class PaymentCompensationServiceTest {
         Payment payment = payment(1L, "portone-payment-id-001", PayStatus.VERIFY_REQUIRED, 10000, order);
         io.portone.sdk.server.payment.Payment nonPaidPayment = mock(io.portone.sdk.server.payment.Payment.class);
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.VERIFY_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.VERIFY_REQUIRED, payment);
         when(portOneClient.getPayment().getPayment("portone-payment-id-001").get())
                 .thenReturn(nonPaidPayment);
 
@@ -107,6 +119,7 @@ class PaymentCompensationServiceTest {
 
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.FAIL);
+        assertThat(payment.getLastCompensationTriedAt()).isNotNull();
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
     }
 
@@ -116,8 +129,7 @@ class PaymentCompensationServiceTest {
         Order order = order(OrderStatus.PROCESSING);
         Payment payment = payment(1L, "portone-payment-id-001", PayStatus.VERIFY_REQUIRED, 10000, order);
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.VERIFY_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.VERIFY_REQUIRED, payment);
         when(portOneClient.getPayment().getPayment("portone-payment-id-001").get())
                 .thenThrow(new RuntimeException("pg timeout"));
 
@@ -126,6 +138,9 @@ class PaymentCompensationServiceTest {
 
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.VERIFY_REQUIRED);
+        assertThat(payment.getCompensationRetryCount()).isEqualTo(1);
+        assertThat(payment.getLastCompensationFailureReason()).contains("pg timeout");
+        assertThat(payment.getLastCompensationTriedAt()).isNotNull();
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
     }
 
@@ -137,8 +152,7 @@ class PaymentCompensationServiceTest {
         PaidPayment paidPayment = paidPaymentAmountOnly(20000L);
         CancelPaymentResponse response = mock(CancelPaymentResponse.class);
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.VERIFY_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.VERIFY_REQUIRED, payment);
         when(portOneClient.getPayment().getPayment("portone-payment-id-001").get())
                 .thenReturn(paidPayment);
         mockCancelSuccess("portone-payment-id-001", "Verify required amount mismatch cancel", response);
@@ -148,6 +162,7 @@ class PaymentCompensationServiceTest {
 
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.ILLEGAL);
+        assertThat(payment.getLastCompensationTriedAt()).isNotNull();
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.ILLEGAL);
     }
 
@@ -158,8 +173,7 @@ class PaymentCompensationServiceTest {
         Payment payment = payment(1L, "portone-payment-id-001", PayStatus.VERIFY_REQUIRED, 10000, order);
         PaidPayment paidPayment = paidPaymentAmountOnly(20000L);
 
-        when(paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.VERIFY_REQUIRED))
-                .thenReturn(List.of(payment));
+        mockTargets(PayStatus.VERIFY_REQUIRED, payment);
         when(portOneClient.getPayment().getPayment("portone-payment-id-001").get())
                 .thenReturn(paidPayment);
         mockCancelFailure("portone-payment-id-001", "Verify required amount mismatch cancel");
@@ -169,7 +183,26 @@ class PaymentCompensationServiceTest {
 
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.CANCEL_REQUIRED);
+        assertThat(payment.getCompensationRetryCount()).isEqualTo(1);
+        assertThat(payment.getLastCompensationFailureReason()).contains("cancel failed");
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.ILLEGAL);
+    }
+
+    @Test
+    void compensationFailureReachingMaxRetryMarksManualReviewRequired() {
+        // given
+        Payment payment = payment(1L, "portone-payment-id-001", PayStatus.CANCEL_REQUIRED, 10000, order(OrderStatus.ILLEGAL));
+        ReflectionTestUtils.setField(payment, "compensationRetryCount", 2);
+
+        mockTargets(PayStatus.CANCEL_REQUIRED, payment);
+        mockCancelFailure("portone-payment-id-001", "Amount mismatch cancel retry");
+
+        // when
+        paymentCompensationService.retryCancelRequiredPayments();
+
+        // then
+        assertThat(payment.getCompensationRetryCount()).isEqualTo(3);
+        assertThat(payment.isManualReviewRequired()).isTrue();
     }
 
     private void mockCancelSuccess(String pgPaymentId, String reason, CancelPaymentResponse response) {
@@ -198,6 +231,15 @@ class PaymentCompensationServiceTest {
                 isNull(),
                 isNull()
         )).thenReturn(CompletableFuture.failedFuture(new RuntimeException("cancel failed")));
+    }
+
+    private void mockTargets(PayStatus payStatus, Payment payment) {
+        when(paymentRepository.findCompensationTargets(
+                eq(payStatus),
+                eq(3),
+                any(LocalDateTime.class),
+                any(Pageable.class)
+        )).thenReturn(List.of(payment));
     }
 
     private PaidPayment paidPayment(Long amount) {

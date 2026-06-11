@@ -9,6 +9,8 @@ import io.portone.sdk.server.PortOneClient;
 import io.portone.sdk.server.payment.PaidPayment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,22 +29,53 @@ public class PaymentCompensationService {
     private final PaymentRepository paymentRepository;
     private final PortOneClient portOneClient;
 
+    @Value("${payment.compensation.batch-size:100}")
+    private int batchSize;
+
+    @Value("${payment.compensation.max-retry-count:5}")
+    private int maxRetryCount;
+
+    @Value("${payment.compensation.retry-interval-minutes:5}")
+    private long retryIntervalMinutes;
+
     @Transactional
     public void retryCancelRequiredPayments() {
-        List<Payment> payments = paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.CANCEL_REQUIRED);
+        List<Payment> payments = findTargets(PayStatus.CANCEL_REQUIRED);
 
         for (Payment payment : payments) {
-            retryCancel(payment);
+            try {
+                retryCancel(payment);
+            } catch (Exception e) {
+                recordFailure(payment, e);
+                log.warn("Unexpected CANCEL_REQUIRED payment compensation failure. paymentId={}, pgPaymentId={}",
+                        payment.getId(), payment.getPgPaymentId(), e);
+            }
         }
     }
 
     @Transactional
     public void retryVerifyRequiredPayments() {
-        List<Payment> payments = paymentRepository.findTop100ByPayStatusOrderByIdAsc(PayStatus.VERIFY_REQUIRED);
+        List<Payment> payments = findTargets(PayStatus.VERIFY_REQUIRED);
 
         for (Payment payment : payments) {
-            retryVerify(payment);
+            try {
+                retryVerify(payment);
+            } catch (Exception e) {
+                recordFailure(payment, e);
+                log.warn("Unexpected VERIFY_REQUIRED payment compensation failure. paymentId={}, pgPaymentId={}",
+                        payment.getId(), payment.getPgPaymentId(), e);
+            }
         }
+    }
+
+    private List<Payment> findTargets(PayStatus payStatus) {
+        LocalDateTime retryBefore = LocalDateTime.now().minusMinutes(retryIntervalMinutes);
+        return paymentRepository.findCompensationTargets(
+                payStatus,
+                maxRetryCount,
+                retryBefore,
+                PageRequest.of(0, batchSize)
+        );
     }
 
     private void retryVerify(Payment payment) {
@@ -51,6 +84,7 @@ public class PaymentCompensationService {
         try {
             pgPayment = portOneClient.getPayment().getPayment(payment.getPgPaymentId()).get();
         } catch (Exception e) {
+            recordFailure(payment, e);
             log.warn("VERIFY_REQUIRED payment lookup retry failed. paymentId={}, pgPaymentId={}",
                     payment.getId(), payment.getPgPaymentId(), e);
             return;
@@ -74,12 +108,14 @@ public class PaymentCompensationService {
         try {
             cancelFullPayment(payment.getPgPaymentId(), MISMATCH_CANCEL_RETRY_REASON);
         } catch (Exception e) {
+            recordFailure(payment, e);
             log.warn("CANCEL_REQUIRED payment cancel retry failed. paymentId={}, pgPaymentId={}",
                     payment.getId(), payment.getPgPaymentId(), e);
             return;
         }
 
         payment.updatePayStatus(PayStatus.ILLEGAL);
+        payment.recordCompensationSuccess();
     }
 
     private void cancelMismatchedVerifiedPayment(Payment payment) {
@@ -88,11 +124,13 @@ public class PaymentCompensationService {
         } catch (Exception e) {
             payment.updateCancelRequired(payment.getPgPaymentId());
             markOrder(payment, OrderStatus.ILLEGAL);
+            recordFailure(payment, e);
             return;
         }
 
         payment.updatePayStatus(PayStatus.ILLEGAL);
         markOrder(payment, OrderStatus.ILLEGAL);
+        payment.recordCompensationSuccess();
     }
 
     private void cancelFullPayment(String pgPaymentId, String reason) throws Exception {
@@ -116,15 +154,29 @@ public class PaymentCompensationService {
 
         payment.updateAfterPay(transactionId, payMethod, paidAt);
         markOrder(payment, OrderStatus.PAID);
+        payment.recordCompensationSuccess();
     }
 
     private void markFailed(Payment payment) {
         payment.updatePayStatus(PayStatus.FAIL);
         markOrder(payment, OrderStatus.PENDING);
+        payment.recordCompensationSuccess();
     }
 
     private void markOrder(Payment payment, OrderStatus orderStatus) {
         Order order = payment.getOrder();
         order.updateOrderStatus(orderStatus);
+    }
+
+    private void recordFailure(Payment payment, Exception e) {
+        payment.recordCompensationFailure(toFailureReason(e), maxRetryCount);
+    }
+
+    private String toFailureReason(Exception e) {
+        String message = e.getMessage();
+        if (message == null || message.isBlank()) {
+            return e.getClass().getSimpleName();
+        }
+        return e.getClass().getSimpleName() + ": " + message;
     }
 }
