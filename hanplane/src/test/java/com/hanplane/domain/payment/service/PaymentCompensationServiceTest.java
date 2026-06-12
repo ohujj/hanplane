@@ -5,9 +5,11 @@ import com.hanplane.domain.order.entity.OrderStatus;
 import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;
 import com.hanplane.domain.payment.repository.PaymentRepository;
+import com.hanplane.global.logging.TraceIdFilter;
 import io.portone.sdk.server.PortOneClient;
 import io.portone.sdk.server.payment.CancelPaymentResponse;
 import io.portone.sdk.server.payment.PaidPayment;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +18,7 @@ import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -40,9 +43,15 @@ class PaymentCompensationServiceTest {
 
     @BeforeEach
     void setUp() {
+        MDC.put(TraceIdFilter.TRACE_ID, "trace-compensation-test");
         ReflectionTestUtils.setField(paymentCompensationService, "batchSize", 100);
         ReflectionTestUtils.setField(paymentCompensationService, "maxRetryCount", 3);
         ReflectionTestUtils.setField(paymentCompensationService, "retryIntervalMinutes", 5L);
+    }
+
+    @AfterEach
+    void tearDown() {
+        MDC.clear();
     }
 
     @Test
@@ -60,6 +69,7 @@ class PaymentCompensationServiceTest {
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.ILLEGAL);
         assertThat(payment.getLastCompensationTriedAt()).isNotNull();
+        assertThat(payment.getLastTraceId()).isEqualTo("trace-compensation-test");
     }
 
     @Test

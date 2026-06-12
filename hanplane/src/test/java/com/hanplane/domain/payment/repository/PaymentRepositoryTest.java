@@ -104,6 +104,41 @@ class PaymentRepositoryTest {
         assertThat(result).containsExactly(eligible);
     }
 
+    @Test
+    @DisplayName("manual review payments include only manual review targets and can be filtered by payStatus")
+    void findManualReviewPaymentsFiltersManualReviewAndPayStatus() {
+        // given
+        User user = userRepository.save(User.builder()
+                .email("manual-review-test@test.com")
+                .password("1234")
+                .name("manual-review-test")
+                .role(Role.USER)
+                .build());
+
+        Order order = orderRepository.save(Order.builder()
+                .user(user)
+                .totalPrice(10000)
+                .orderStatus(OrderStatus.ILLEGAL)
+                .build());
+
+        Payment cancelRequiredManual = createPayment(order, "cancel-required-manual", PayStatus.CANCEL_REQUIRED);
+        Payment verifyRequiredManual = createPayment(order, "verify-required-manual", PayStatus.VERIFY_REQUIRED);
+        Payment notManual = createPayment(order, "not-manual", PayStatus.CANCEL_REQUIRED);
+
+        ReflectionTestUtils.setField(cancelRequiredManual, "manualReviewRequired", true);
+        ReflectionTestUtils.setField(verifyRequiredManual, "manualReviewRequired", true);
+
+        paymentRepository.saveAllAndFlush(List.of(cancelRequiredManual, verifyRequiredManual, notManual));
+
+        // when
+        List<Payment> allManualReviews = paymentRepository.findManualReviewPayments(null, PageRequest.of(0, 10)).getContent();
+        List<Payment> cancelRequiredOnly = paymentRepository.findManualReviewPayments(PayStatus.CANCEL_REQUIRED, PageRequest.of(0, 10)).getContent();
+
+        // then
+        assertThat(allManualReviews).containsExactly(cancelRequiredManual, verifyRequiredManual);
+        assertThat(cancelRequiredOnly).containsExactly(cancelRequiredManual);
+    }
+
     private Payment createPayment(Order order, String idempotencyKey) {
         return createPayment(order, idempotencyKey, PayStatus.PROCESSING);
     }

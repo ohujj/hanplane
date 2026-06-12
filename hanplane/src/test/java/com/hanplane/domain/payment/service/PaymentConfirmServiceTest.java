@@ -10,6 +10,8 @@ import com.hanplane.domain.payment.repository.PaymentRepository;
 import com.hanplane.domain.user.entity.User;
 import com.hanplane.global.exception.BusinessException;
 import com.hanplane.global.exception.ErrorCode;
+import com.hanplane.global.logging.TraceIdFilter;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.mockito.InjectMocks;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 
 import java.util.Optional;
 
@@ -48,6 +51,8 @@ class PaymentConfirmServiceTest {
 
     @BeforeEach
     void setUp() {
+        MDC.put(TraceIdFilter.TRACE_ID, "trace-payment-confirm-test");
+
         user = mock(User.class);
         when(user.getId()).thenReturn(userId);
 
@@ -58,6 +63,11 @@ class PaymentConfirmServiceTest {
                 .orderId(orderId)
                 .paymentId("portone-payment-id-001")
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        MDC.clear();
     }
 
     @Test
@@ -105,6 +115,7 @@ class PaymentConfirmServiceTest {
         assertThat(result.newlyCreated()).isTrue();
         assertThat(result.payment().getIdempotencyKey()).isEqualTo(idempotencyKey);
         assertThat(result.payment().getPayStatus()).isEqualTo(PayStatus.PROCESSING);
+        assertThat(result.payment().getLastTraceId()).isEqualTo("trace-payment-confirm-test");
 
         InOrder inOrder = inOrder(orderRepository, paymentRepository);
         inOrder.verify(paymentRepository).findByOrder_IdAndIdempotencyKey(orderId, idempotencyKey);

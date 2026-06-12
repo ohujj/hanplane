@@ -7,11 +7,15 @@ import com.hanplane.domain.payment.dto.PaymentConfirmRequest;
 import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;
 import com.hanplane.domain.payment.repository.PaymentRepository;
+import com.hanplane.global.logging.TraceIdFilter;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -30,6 +34,16 @@ class PaymentAfterServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @BeforeEach
+    void setUp() {
+        MDC.put(TraceIdFilter.TRACE_ID, "trace-payment-after-test");
+    }
+
+    @AfterEach
+    void tearDown() {
+        MDC.clear();
+    }
 
     @Test
     void PG_호출_실패_시_Payment는_FAIL_Order는_PENDING으로_복구() {
@@ -102,6 +116,7 @@ class PaymentAfterServiceTest {
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.VERIFY_REQUIRED);
         assertThat(payment.getPgPaymentId()).isEqualTo(pgPaymentId);
+        assertThat(payment.getLastTraceId()).isEqualTo("trace-payment-after-test");
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
     }
 

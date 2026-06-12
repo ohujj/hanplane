@@ -2,6 +2,7 @@ package com.hanplane.domain.payment.entity;
 
 import com.hanplane.domain.order.entity.Order;
 import com.hanplane.global.entity.BaseEntity;
+import com.hanplane.global.logging.TraceIdHolder;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -62,6 +63,9 @@ public class Payment extends BaseEntity {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean manualReviewRequired;
 
+    @Column(length = 100)
+    private String lastTraceId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
@@ -78,6 +82,7 @@ public class Payment extends BaseEntity {
         this.paidAt = paidAt;
         this.amount = amount;
         this.order = order;
+        updateLastTraceId();
     }
 
     public void updateAfterPay(String pgPaymentId, String transactionId,
@@ -87,6 +92,7 @@ public class Payment extends BaseEntity {
         this.payMethod = payMethod;
         this.paidAt = paidAt;
         this.payStatus = PayStatus.SUCCESS;
+        updateLastTraceId();
     }
 
     public void updateAfterPay(String transactionId, String payMethod, LocalDateTime paidAt) {
@@ -94,28 +100,33 @@ public class Payment extends BaseEntity {
         this.payMethod = payMethod;
         this.paidAt = paidAt;
         this.payStatus = PayStatus.SUCCESS;
+        updateLastTraceId();
         update();
     }
 
     public void updatePayStatus(PayStatus payStatus) {
         this.payStatus = payStatus;
+        updateLastTraceId();
         update();
     }
 
     public void updateVerifyRequired(String pgPaymentId) {
         this.pgPaymentId = pgPaymentId;
         this.payStatus = PayStatus.VERIFY_REQUIRED;
+        updateLastTraceId();
         update();
     }
 
     public void updateCancelRequired(String pgPaymentId) {
         this.pgPaymentId = pgPaymentId;
         this.payStatus = PayStatus.CANCEL_REQUIRED;
+        updateLastTraceId();
         update();
     }
 
     public void recordCompensationSuccess() {
         this.lastCompensationTriedAt = LocalDateTime.now();
+        updateLastTraceId();
         update();
     }
 
@@ -126,6 +137,7 @@ public class Payment extends BaseEntity {
         if (this.compensationRetryCount >= maxRetryCount) {
             this.manualReviewRequired = true;
         }
+        updateLastTraceId();
         update();
     }
 
@@ -134,6 +146,13 @@ public class Payment extends BaseEntity {
             return "Unknown compensation failure";
         }
         return failureReason.length() > 500 ? failureReason.substring(0, 500) : failureReason;
+    }
+
+    private void updateLastTraceId() {
+        String traceId = TraceIdHolder.getTraceId();
+        if (traceId != null && !traceId.isBlank()) {
+            this.lastTraceId = traceId.length() > 100 ? traceId.substring(0, 100) : traceId;
+        }
     }
 
 }

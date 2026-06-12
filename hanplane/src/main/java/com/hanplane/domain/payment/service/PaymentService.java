@@ -24,36 +24,34 @@ public class PaymentService {
     public void confirm(Long userId, PaymentConfirmRequest request, String idempotencyKey) {
         PaymentConfirmResult result = paymentConfirmService.confirmOrder(userId, request, idempotencyKey);
 
-        // 기존 Payment 재사용인 경우(idempotent retry): PG 재호출 없이 정상 종료
         if (!result.newlyCreated()) {
-            log.info("멱등성 키 중복 요청 - orderId={}, idempotencyKey 재사용으로 payProcess 스킵",
-                    request.getOrderId());
+            log.info("Payment confirm idempotent retry skipped. orderId={}, pgPaymentId={}, idempotencyKeyPrefix={}",
+                    request.getOrderId(), request.getPaymentId(), idempotencyKeyPrefix(idempotencyKey));
             return;
         }
 
-        // 새로 생성된 Payment에 대해서만 PG 결제 진행
+        log.info("Payment confirm PG lookup started. orderId={}, pgPaymentId={}, idempotencyKeyPrefix={}",
+                request.getOrderId(), request.getPaymentId(), idempotencyKeyPrefix(idempotencyKey));
         payProcess(request, result.payment());
     }
 
-    // 결제 실제 진행되는 프로세스
     public void payProcess(PaymentConfirmRequest request, Payment payment) {
         io.portone.sdk.server.payment.Payment pgPayment;
-        PaidPayment paidPayment = null;
+        PaidPayment paidPayment;
 
         try {
             pgPayment = portOneClient.getPayment().getPayment(request.getPaymentId()).get();
 
-            // return 된 인스턴스가 Paid 객체인지 확인하기
             if (!(pgPayment instanceof PaidPayment)) {
                 throw new BusinessException(ErrorCode.PG_PAYMENT_NOT_PAID);
             }
 
             paidPayment = (PaidPayment) pgPayment;
 
-            // 가격 조작되진 않았는지 validation
             long pgAmount = paidPayment.getAmount().getTotal();
             if (pgAmount != payment.getAmount()) {
-                // 조작된 사용자라 판단하여 pg 취소 혹은 후처리 로직 메서드
+                log.warn("Payment amount mismatch detected. orderId={}, pgPaymentId={}, expectedAmount={}, pgAmount={}",
+                        request.getOrderId(), request.getPaymentId(), payment.getAmount(), pgAmount);
                 cancelMismatchedPayment(request, pgAmount);
                 throw new BusinessException(ErrorCode.PAYMENT_AMOUNT_MISMATCH);
             }
@@ -67,7 +65,10 @@ public class PaymentService {
             paymentAfterService.verifyRequiredProcess(request);
             throw new BusinessException(ErrorCode.PG_CALL_FAILED);
         }
+
         paymentAfterService.payAfterProcess(request, paidPayment);
+        log.info("Payment confirm completed. orderId={}, pgPaymentId={}",
+                request.getOrderId(), request.getPaymentId());
     }
 
     private void cancelMismatchedPayment(PaymentConfirmRequest request, long pgAmount) {
@@ -77,17 +78,28 @@ public class PaymentService {
                     pgAmount,
                     null,
                     null,
-                    "금액 불일치로 인한 자동 취소",
+                    "Amount mismatch auto cancel",
                     null,
                     null,
                     null,
                     null
             ).get();
         } catch (Exception e) {
+            log.warn("Payment amount mismatch cancel failed. orderId={}, pgPaymentId={}, pgAmount={}",
+                    request.getOrderId(), request.getPaymentId(), pgAmount, e);
             paymentAfterService.cancelRequiredProcess(request);
             return;
         }
 
+        log.info("Payment amount mismatch cancel succeeded. orderId={}, pgPaymentId={}, pgAmount={}",
+                request.getOrderId(), request.getPaymentId(), pgAmount);
         paymentAfterService.illegalRequestProcess(request);
+    }
+
+    private String idempotencyKeyPrefix(String idempotencyKey) {
+        if (idempotencyKey == null) {
+            return null;
+        }
+        return idempotencyKey.length() <= 8 ? idempotencyKey : idempotencyKey.substring(0, 8);
     }
 }

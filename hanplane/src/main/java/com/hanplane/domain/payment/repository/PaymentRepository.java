@@ -2,6 +2,7 @@ package com.hanplane.domain.payment.repository;
 
 import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrder_IdAndIdempotencyKey(Long orderId, String idempotencyKey);
 
     List<Payment> findTop100ByPayStatusOrderByIdAsc(PayStatus payStatus);
+
+    @Query(
+            value = """
+                    select p from Payment p
+                    where p.manualReviewRequired = true
+                      and (:payStatus is null or p.payStatus = :payStatus)
+                    order by p.id asc
+                    """,
+            countQuery = """
+                    select count(p) from Payment p
+                    where p.manualReviewRequired = true
+                      and (:payStatus is null or p.payStatus = :payStatus)
+                    """
+    )
+    Page<Payment> findManualReviewPayments(@Param("payStatus") PayStatus payStatus, Pageable pageable);
 
     @Query("""
             select p from Payment p

@@ -3,3 +3,7 @@ spring:
     name: hanplane
   profiles:
     active: local
+
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId:-}]"
