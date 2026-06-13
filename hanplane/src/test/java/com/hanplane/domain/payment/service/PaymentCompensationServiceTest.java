@@ -86,7 +86,7 @@ class PaymentCompensationServiceTest {
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.CANCEL_REQUIRED);
         assertThat(payment.getCompensationRetryCount()).isEqualTo(1);
-        assertThat(payment.getLastCompensationFailureReason()).contains("RuntimeException");
+        assertThat(payment.getLastCompensationFailureReason()).isEqualTo("PG_CANCEL_FAILED");
         assertThat(payment.getLastCompensationTriedAt()).isNotNull();
         assertThat(payment.isManualReviewRequired()).isFalse();
     }
@@ -149,7 +149,7 @@ class PaymentCompensationServiceTest {
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.VERIFY_REQUIRED);
         assertThat(payment.getCompensationRetryCount()).isEqualTo(1);
-        assertThat(payment.getLastCompensationFailureReason()).contains("pg timeout");
+        assertThat(payment.getLastCompensationFailureReason()).isEqualTo("PG_TIMEOUT");
         assertThat(payment.getLastCompensationTriedAt()).isNotNull();
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PROCESSING);
     }
@@ -194,7 +194,7 @@ class PaymentCompensationServiceTest {
         // then
         assertThat(payment.getPayStatus()).isEqualTo(PayStatus.CANCEL_REQUIRED);
         assertThat(payment.getCompensationRetryCount()).isEqualTo(1);
-        assertThat(payment.getLastCompensationFailureReason()).contains("cancel failed");
+        assertThat(payment.getLastCompensationFailureReason()).isEqualTo("PG_CANCEL_FAILED");
         assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.ILLEGAL);
     }
 

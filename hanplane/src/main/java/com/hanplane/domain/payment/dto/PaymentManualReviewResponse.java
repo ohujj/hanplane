@@ -2,6 +2,7 @@ package com.hanplane.domain.payment.dto;
 
 import com.hanplane.domain.payment.entity.PayStatus;
 import com.hanplane.domain.payment.entity.Payment;
+import com.hanplane.domain.payment.support.CompensationFailureReasonSanitizer;
 
 import java.time.LocalDateTime;
 
@@ -28,7 +29,7 @@ public record PaymentManualReviewResponse(
                 payment.getPgPaymentId(),
                 payment.getAmount(),
                 payment.getCompensationRetryCount(),
-                payment.getLastCompensationFailureReason(),
+                CompensationFailureReasonSanitizer.sanitize(payment.getLastCompensationFailureReason()),
                 payment.getLastCompensationTriedAt(),
                 payment.getLastTraceId(),
                 payment.isManualReviewRequired(),

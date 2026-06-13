@@ -74,7 +74,7 @@ class PaymentManualReviewServiceTest {
         assertThat(response.pgPaymentId()).isEqualTo("pg-payment-001");
         assertThat(response.amount()).isEqualTo(10000);
         assertThat(response.compensationRetryCount()).isEqualTo(5);
-        assertThat(response.lastCompensationFailureReason()).isEqualTo("RuntimeException: cancel failed");
+        assertThat(response.lastCompensationFailureReason()).isEqualTo("PG_CANCEL_FAILED");
         assertThat(response.lastCompensationTriedAt()).isEqualTo(triedAt);
         assertThat(response.lastTraceId()).isEqualTo("batch-trace-001");
         assertThat(response.manualReviewRequired()).isTrue();

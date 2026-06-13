@@ -48,4 +48,36 @@ class PaymentTest {
         // then
         assertThat(payment.getLastTraceId()).isEqualTo("trace-old");
     }
+
+    @Test
+    void recordCompensationFailureStoresSanitizedReasonOnly() {
+        // given
+        Payment payment = Payment.builder()
+                .idempotencyKey("test-key")
+                .amount(10000)
+                .payStatus(PayStatus.CANCEL_REQUIRED)
+                .build();
+
+        // when
+        payment.recordCompensationFailure("RuntimeException: token=secret-123 cardNo=1111 cancel failed", 3);
+
+        // then
+        assertThat(payment.getLastCompensationFailureReason()).isEqualTo("PG_CANCEL_FAILED");
+    }
+
+    @Test
+    void recordCompensationFailureUsesDefaultReasonWhenBlank() {
+        // given
+        Payment payment = Payment.builder()
+                .idempotencyKey("test-key")
+                .amount(10000)
+                .payStatus(PayStatus.CANCEL_REQUIRED)
+                .build();
+
+        // when
+        payment.recordCompensationFailure(" ", 3);
+
+        // then
+        assertThat(payment.getLastCompensationFailureReason()).isEqualTo("COMPENSATION_FAILED");
+    }
 }

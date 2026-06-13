@@ -1,6 +1,7 @@
 package com.hanplane.domain.payment.entity;
 
 import com.hanplane.domain.order.entity.Order;
+import com.hanplane.domain.payment.support.CompensationFailureReasonSanitizer;
 import com.hanplane.global.entity.BaseEntity;
 import com.hanplane.global.logging.TraceIdHolder;
 import jakarta.persistence.*;
@@ -142,10 +143,7 @@ public class Payment extends BaseEntity {
     }
 
     private String sanitizeFailureReason(String failureReason) {
-        if (failureReason == null || failureReason.isBlank()) {
-            return "Unknown compensation failure";
-        }
-        return failureReason.length() > 500 ? failureReason.substring(0, 500) : failureReason;
+        return CompensationFailureReasonSanitizer.sanitize(failureReason);
     }
 
     private void updateLastTraceId() {

@@ -25,6 +25,11 @@ public class PaymentCompensationService {
 
     private static final String MISMATCH_CANCEL_RETRY_REASON = "Amount mismatch cancel retry";
     private static final String VERIFY_MISMATCH_CANCEL_REASON = "Verify required amount mismatch cancel";
+    private static final String FAILURE_COMPENSATION_FAILED = "COMPENSATION_FAILED";
+    private static final String FAILURE_PG_CANCEL_FAILED = "PG_CANCEL_FAILED";
+    private static final String FAILURE_PG_CONNECTION_FAILED = "PG_CONNECTION_FAILED";
+    private static final String FAILURE_PG_LOOKUP_FAILED = "PG_LOOKUP_FAILED";
+    private static final String FAILURE_PG_TIMEOUT = "PG_TIMEOUT";
 
     private final PaymentRepository paymentRepository;
     private final PortOneClient portOneClient;
@@ -46,7 +51,7 @@ public class PaymentCompensationService {
             try {
                 retryCancel(payment);
             } catch (Exception e) {
-                recordFailure(payment, e);
+                recordFailure(payment, e, FAILURE_COMPENSATION_FAILED);
                 log.warn("Unexpected CANCEL_REQUIRED payment compensation failure. paymentId={}, pgPaymentId={}",
                         payment.getId(), payment.getPgPaymentId(), e);
             }
@@ -61,7 +66,7 @@ public class PaymentCompensationService {
             try {
                 retryVerify(payment);
             } catch (Exception e) {
-                recordFailure(payment, e);
+                recordFailure(payment, e, FAILURE_COMPENSATION_FAILED);
                 log.warn("Unexpected VERIFY_REQUIRED payment compensation failure. paymentId={}, pgPaymentId={}",
                         payment.getId(), payment.getPgPaymentId(), e);
             }
@@ -84,7 +89,7 @@ public class PaymentCompensationService {
         try {
             pgPayment = portOneClient.getPayment().getPayment(payment.getPgPaymentId()).get();
         } catch (Exception e) {
-            recordFailure(payment, e);
+            recordFailure(payment, e, FAILURE_PG_LOOKUP_FAILED);
             log.warn("VERIFY_REQUIRED payment lookup retry failed. paymentId={}, pgPaymentId={}",
                     payment.getId(), payment.getPgPaymentId(), e);
             return;
@@ -108,7 +113,7 @@ public class PaymentCompensationService {
         try {
             cancelFullPayment(payment.getPgPaymentId(), MISMATCH_CANCEL_RETRY_REASON);
         } catch (Exception e) {
-            recordFailure(payment, e);
+            recordFailure(payment, e, FAILURE_PG_CANCEL_FAILED);
             log.warn("CANCEL_REQUIRED payment cancel retry failed. paymentId={}, pgPaymentId={}",
                     payment.getId(), payment.getPgPaymentId(), e);
             return;
@@ -124,7 +129,7 @@ public class PaymentCompensationService {
         } catch (Exception e) {
             payment.updateCancelRequired(payment.getPgPaymentId());
             markOrder(payment, OrderStatus.ILLEGAL);
-            recordFailure(payment, e);
+            recordFailure(payment, e, FAILURE_PG_CANCEL_FAILED);
             return;
         }
 
@@ -168,15 +173,18 @@ public class PaymentCompensationService {
         order.updateOrderStatus(orderStatus);
     }
 
-    private void recordFailure(Payment payment, Exception e) {
-        payment.recordCompensationFailure(toFailureReason(e), maxRetryCount);
+    private void recordFailure(Payment payment, Exception e, String defaultFailureReason) {
+        payment.recordCompensationFailure(toSafeFailureReason(e, defaultFailureReason), maxRetryCount);
     }
 
-    private String toFailureReason(Exception e) {
-        String message = e.getMessage();
-        if (message == null || message.isBlank()) {
-            return e.getClass().getSimpleName();
+    private String toSafeFailureReason(Exception e, String defaultFailureReason) {
+        String failureText = (e.getClass().getSimpleName() + " " + e.getMessage()).toLowerCase();
+        if (failureText.contains("timeout") || failureText.contains("timed out")) {
+            return FAILURE_PG_TIMEOUT;
         }
-        return e.getClass().getSimpleName() + ": " + message;
+        if (failureText.contains("connect") || failureText.contains("connection")) {
+            return FAILURE_PG_CONNECTION_FAILED;
+        }
+        return defaultFailureReason;
     }
 }
